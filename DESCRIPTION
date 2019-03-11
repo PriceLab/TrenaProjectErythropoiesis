@@ -1,8 +1,8 @@
 Package: TrenaProjectErythropoiesis
 Title: Temporal Analysis of Erythropoiesis
 Date: 2019-03-10
-Version: 0.99.3
-Authors@R: person("Paul", "Shannon", email = "pshannon@systemsbiology.org", role = c("aut", "cre"))
+Version: 0.99.4
+Author: pshannon@systemsbiology.org
 Description: Trena and TrenaViz project for the analysis of erythropoiesis.
 Imports: methods
 Depends: R (>= 3.5.1), TrenaProject
