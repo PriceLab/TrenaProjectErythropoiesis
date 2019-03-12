@@ -38,8 +38,9 @@ test_fimoService <- function()
 #--------------------------------------------------------------------------------------------------------------
 runTests <- function()
 {
-   test_readAtacSeq()
-   test_findFimoHitsInAtacSeqRegions()
+  test_readAtacSeq()
+  test_findFimoHitsInAtacSeqRegions()
+  test_lineCountAtacSeq()
    
 } # runTests
 #--------------------------------------------------------------------------------------------------------------
@@ -90,6 +91,36 @@ test_readAtacSeq <- function()
    checkEquals(dim(tbl.12.2), c(107772, 10))
 
 } # test_readAtacSeq
+#--------------------------------------------------------------------------------------------------------------
+# when sanity checking the open chromatin regions in each file, the count of those regions should
+# roughly correlate with the number of lines in the file.   that number is found here.
+lineCountAtacSeq <- function(dayNumber, replicateNumber)
+{
+   dir <- "~/github/TrenaProjectErythropoiesis/prep/import/atacPeaks"
+   atac.files <- grep("narrowPeak$", list.files(dir), v=TRUE)
+   dayString <- sprintf("d%02d", dayNumber)
+   repString <- sprintf("rep%1d", replicateNumber)
+   searchString <- sprintf("%s_%s", dayString, repString)
+
+   stopifnot(any(grepl(searchString, atac.files)))
+
+   foi <- grep(searchString, atac.files, value=TRUE)
+   full.path <- file.path(dir, foi)
+   stopifnot(file.exists(full.path))
+   cmd <- sprintf("wc -l %s", full.path)
+   x <- system(cmd, intern=TRUE)
+   as.numeric(strsplit(x, " ")[[1]][1])
+
+} # lineCountAtacSeq
+#--------------------------------------------------------------------------------------------------------------
+test_lineCountAtacSeq <- function()
+{
+   printf("--- test_lineCountAtacSeq")
+
+   checkEquals(lineCountAtacSeq(4,1), 305762)
+   checkEquals(lineCountAtacSeq(4,2), 133208)
+           
+} # test_lineCountAtacSeq
 #--------------------------------------------------------------------------------------------------------------
 # for all TFs currently loaded into the FimoServer
 findFimoHitsInAtacSeqRegions <- function(tbl.atac, threshold)
