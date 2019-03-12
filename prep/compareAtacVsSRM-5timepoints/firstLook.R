@@ -105,7 +105,7 @@ test_findFimoHitsInAtacSeqRegions <- function()
    tbl.4.1 <- readAtacSeq(4, 1)
    dim(tbl.4.1)
    tbl.test <- tbl.4.1[1:100,]
-   tbl.hits <- findFimoHitsInAtacSeq(tbl.test, 1e-4)
+   tbl.hits <- findFimoHitsInAtacSeqRegions(tbl.test, 1e-4)
    checkTrue(nrow(tbl.hits) > 75)
 
 } # test_findFimoHitsInAtacSeqRegions
