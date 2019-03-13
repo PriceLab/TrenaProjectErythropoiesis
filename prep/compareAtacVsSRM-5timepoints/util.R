@@ -180,7 +180,7 @@ test_reshapeAtacSeqData <- function()
 
 } # test_reshapeAtacSeqData
 #--------------------------------------------------------------------------------------------------------------
-extractHitData <- function(hits, day, rep, geneSymbol, mode)
+extractHitData <- function(regions, hits, day, rep, geneSymbol, mode)
 {
    name <- sprintf("day.%d.%1d", day, rep)
    tbl <- hits[[name]]
@@ -188,9 +188,15 @@ extractHitData <- function(hits, day, rep, geneSymbol, mode)
    hit.count.total <- nrow(tbl.sub)
    topQuartileScore <- fivenum(tbl.sub$score)[4]
    hit.count.topScore <- nrow(subset(tbl.sub, score >= topQuartileScore))
+   
+   tbl.region <- regions[[name]]
+   region.count <- nrow(tbl.region)
+
    result <- switch(mode,
                 "total" = hit.count.total,
-                "top"   = hit.count.topScore
+                "top"   = hit.count.topScore,
+                "total-density" = {round(100 * hit.count.total/region.count, digits=2)},
+                "top-density" = {round(100* hit.count.topScore/region.count, digits=2)}
                 )
    result
    
@@ -203,14 +209,26 @@ test_extractHitData <- function()
 
    tbl.sub <- hits[[1]][grep("KLF1", hits[[1]]$motif),]
    expected <- nrow(tbl.sub)
-   total.klf1.hits.day.4.1 <- extractHitData(hits, days[i], reps[i], gene, "total")
+   total.klf1.hits.day.4.1 <- extractHitData(regions, hits, days[1], reps[1], gene, "total")
    checkEquals(expected, total.klf1.hits.day.4.1)
 
    topQuartile <- fivenum(tbl.sub$score)[4]
    tbl.sub.sub <- subset(tbl.sub, score >= topQuartile)
    expected <- nrow(tbl.sub.sub)
-   top.klf1.hits.day.4.1 <- extractHitData(hits, days[i], reps[i], gene, "top")
+   top.klf1.hits.day.4.1 <- extractHitData(regions, hits, days[1], reps[1], gene, "top")
    checkEquals(expected, top.klf1.hits.day.4.1)
+
+      # density is the percentage of motif matches/open regions
+   total.density.klf1.hits.day.4.1 <- extractHitData(regions, hits, days[1], reps[1], gene, "total-density")
+   top.density.klf1.hits.day.4.1 <- extractHitData(regions, hits, days[1], reps[1], gene, "top-density")
+
+      # we expect the ratio of top/total hits to be the same as topDensity/totalDensity
+      # since the same denominator is used in each case: the count of open chromatin regions
+      # identified by ChIP-seq
+   ratio.top.hits.total.hits <- top.klf1.hits.day.4.1/total.klf1.hits.day.4.1
+   ratio.top.dentisty.total.density <- top.density.klf1.hits.day.4.1/total.density.klf1.hits.day.4.1
+
+   checkEqualsNumeric(ratio.top.hits.total.hits, ratio.top.density.total.density, tol=0.001)
 
 } # test_extractHitData
 #--------------------------------------------------------------------------------------------------------------
