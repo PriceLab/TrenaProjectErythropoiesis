@@ -4,9 +4,7 @@
 if(!exists("readAtacSeq"))
     source("util.R")
 #--------------------------------------------------------------------------------------------------------------
-days <- c(4, 4, 8, 10, 10, 11, 11, 12, 12)
-reps <- c(1, 2, 1, 1,   1,  1,  2,  1,  2)
-span <- seq_len(length(days))
+span <- seq_len(length(days))     # days and reps define in util.R
 regions <- lapply(span, function(i) readAtacSeq(days[i], reps[i]))
 names(regions) <- sprintf("day.%d.%d", days, reps)
 regionCounts <- unlist(lapply(regions, nrow), use.names=FALSE)
@@ -16,4 +14,5 @@ checkTrue(all(regionCounts == lineCounts))
 hits <- lapply(regions, function(tbl.region) findFimoHitsInAtacSeqRegions(tbl.region, 1e-4))
 names(hits) <- sprintf("day.%d.%d", days, reps)
 save(regions, hits, file="regionsAndHits.RData")
+
 

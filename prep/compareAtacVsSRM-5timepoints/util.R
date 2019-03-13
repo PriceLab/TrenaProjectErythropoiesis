@@ -1,5 +1,9 @@
 # atac-seq, srm, jeff & marjorie: only 5 shared time points: days 4, 8*, 10, 11, 12, FLI1 and KLF1
-
+#--------------------------------------------------------------------------------------------------------------
+# use these to form the columns of interest (coi) in the assembled big matrix
+days <- c(4, 4, 8, 10, 10, 11, 11, 12, 12)
+reps <- c(1, 2, 1, 1,   2,  1,  2,  1,  2)
+#--------------------------------------------------------------------------------------------------------------
 library(RUnit)
 library(FimoClient)
 library(BSgenome.Hsapiens.UCSC.hg38)
@@ -41,6 +45,8 @@ runTests <- function()
   test_readAtacSeq()
   test_findFimoHitsInAtacSeqRegions()
   test_lineCountAtacSeq()
+  test_reshapeAtacSeqData()
+  test_extractHitData()
    
 } # runTests
 #--------------------------------------------------------------------------------------------------------------
@@ -141,44 +147,70 @@ test_findFimoHitsInAtacSeqRegions <- function()
 
 } # test_findFimoHitsInAtacSeqRegions
 #--------------------------------------------------------------------------------------------------------------
-# FIMO_HOST <- "khaleesi"
-# FIMO_PORT <- 5558
-# fc <- FimoClient(FIMO_HOST, FIMO_PORT, quiet=TRUE)
-# requestMatch(fc, list(seq0="ATCGATTTTGGGGGAAAAAATTTT"), 10e-2)
+reshapeAtacSeqData <- function()
+{
+   f <- "../import/srm-from-jeff/srm-copyNumberMatrices-rep1-rep2.RData"
+   printf(load(f))
+   stopifnot(all(rownames(mtx.cn1) == rownames(mtx.cn2)))
+   stopifnot(all(colnames(mtx.cn1) == colnames(mtx.cn2)))
 
-# getFimoMatches <- function(day, replicate,  threshold=10e-4)
-# {
-#    tbl.day.rep <- read.table("../import/atacPeaks/ATAC_Cord_d04_rep1_hg38_macs2_default_peaks.narrowPeak", sep="\t", as.is=TRUE)
-# colnames(tbl.d04.1) <- c("chrom", "start", "end", "name", "score", "strand", "score2", "score3", "score4", "score5")
-# dim(tbl.d04.1)
-# tbl.hits.d04.1 <- getMatches(tbl.d04.1, 10e-5)
-# printf("d04.1 matches: %d/%d: %5.2f", nrow(tbl.hits.d04.1), nrow(tbl.d04.1), 100 * nrow(tbl.hits.d04.1)/ nrow(tbl.d04.1))
-# 
-#    chroms <- tbl$chrom
-#    starts <- tbl$start
-#    ends   <- tbl$end
-# 
-#    printf("--- requesting %d sequences", nrow(tbl))
-#    seqs <- as.list(as.character(getSeq(BSgenome.Hsapiens.UCSC.hg38, chroms, starts, ends)))
-#    names(seqs) <- sprintf("seq%06d", 1:length(seqs))
-#    length(seqs)
-#    printf("--- requesting matches in %d regions", nrow(tbl))
-#    tbl.out <- requestMatch(fc, seqs, threshold)
-#    invisible(tbl.out)
-# 
-# } # getFimoMatches
-# #--------------------------------------------------------------------------------------------------------------
-# test_getFimoMatches <- function()
-# {
-#    printf("--- test_getFimoMatches")
-#    getFimoMatches(day=4, rep=1)
-# 
-# } # test_getFimoMatches
-# #--------------------------------------------------------------------------------------------------------------
-# 
-# # load("~/github/TrenaProjectErythropoiesis/prep/import/srm-from-jeff/srm-copyNumberMatrices-rep1-rep2.RData") # mtx.cn1, mtx.cn2
-# # dim(mtx.cn1)
-# # mtx.cn1[1:10, 1:10]
-# 
-# 
-# 
+   coi <- sprintf("day.%02d.%1d", days, reps)
+   mtx <- matrix(0, nrow=nrow(mtx.cn1), ncol=length(coi),
+                 dimnames=list(rownames(mtx.cn1), coi))
+    #"day.04.1" "day.04.2" "day.08.1" "day.10.1" "day.10.1" "day.11.1" "day.11.2" "day.12.1" "day.12.2"
+   mtx[, "day.04.1"] <- mtx.cn1[, "Day4"]
+   mtx[, "day.04.2"] <- mtx.cn2[, "Day4"]
+     #mtx[, "day.08.1"] <- (mtx.cn1[, "Day8"] + mtx.cn2[, "Day8"])/2
+   mtx[, "day.08.1"] <- mtx.cn1[, "Day8"]
+   mtx[, "day.10.1"] <- mtx.cn1[, "Day10"]
+   mtx[, "day.10.2"] <- mtx.cn2[, "Day10"]
+   mtx[, "day.11.1"] <- mtx.cn1[, "Day11"]
+   mtx[, "day.11.2"] <- mtx.cn2[, "Day11"]
+   mtx[, "day.12.1"] <- mtx.cn1[, "Day12"]
+   mtx[, "day.12.2"] <- mtx.cn2[, "Day12"]
+   
+   invisible(mtx)   
+
+} # reshapeAtacSeqData
+#--------------------------------------------------------------------------------------------------------------
+test_reshapeAtacSeqData <- function()
+{
+   mtx <- reshapeAtacSeqData()
+   checkEquals(dim(mtx), c(107, 9))
+
+} # test_reshapeAtacSeqData
+#--------------------------------------------------------------------------------------------------------------
+extractHitData <- function(hits, day, rep, geneSymbol, mode)
+{
+   name <- sprintf("day.%d.%1d", day, rep)
+   tbl <- hits[[name]]
+   tbl.sub <- tbl[grep(geneSymbol, tbl$motif),]
+   hit.count.total <- nrow(tbl.sub)
+   topQuartileScore <- fivenum(tbl.sub$score)[4]
+   hit.count.topScore <- nrow(subset(tbl.sub, score >= topQuartileScore))
+   result <- switch(mode,
+                "total" = hit.count.total,
+                "top"   = hit.count.topScore
+                )
+   result
+   
+} # extractHitData
+#--------------------------------------------------------------------------------------------------------------
+test_extractHitData <- function()
+{
+   printf("--- test_extractHitData")
+   gene <- "KLF1"
+
+   tbl.sub <- hits[[1]][grep("KLF1", hits[[1]]$motif),]
+   expected <- nrow(tbl.sub)
+   total.klf1.hits.day.4.1 <- extractHitData(hits, days[i], reps[i], gene, "total")
+   checkEquals(expected, total.klf1.hits.day.4.1)
+
+   topQuartile <- fivenum(tbl.sub$score)[4]
+   tbl.sub.sub <- subset(tbl.sub, score >= topQuartile)
+   expected <- nrow(tbl.sub.sub)
+   top.klf1.hits.day.4.1 <- extractHitData(hits, days[i], reps[i], gene, "top")
+   checkEquals(expected, top.klf1.hits.day.4.1)
+
+} # test_extractHitData
+#--------------------------------------------------------------------------------------------------------------
