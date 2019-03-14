@@ -1,0 +1,41 @@
+<h4>A First Look at ATAC-seq &amp; SRM in Erythropoiesis  Differentiation</h4>
+
+Marjorie Brand's lab produced ATAC-seq open chromatin assays, and Jeff Ranish's lab SRM copy numbers
+across these shared time points and equal number of (biological?) replicates.
+<ul>
+   <li> day 4 (2 reps)
+   <li> day 8 (1 rep)
+   <li> day 10 (2 reps)
+   <li> day 11 (2 reps)
+   <li> day 12 (2 reps)
+</ul>
+The ATAC-seq data has just one replicate at day 8, so I have not included the second rep at day 8 from the
+SRM data.
+
+This webapp is for the exploration of the following measures and derived quantities:
+<ul>
+  <li><b>KLF1.srm</b>: copy number counts for transcription factor <b>KLF1</b>, bulk SRM
+  <li><b>KLF1.total.hits</b>: number of FIMO matches (pvalue <= 1e-4) of
+        Hsapiens-SwissRegulon-KLF1.SwissRegulon motif in all areas of open chromatin
+  <li><b>KLF1.top.hits</b>: number of FIMO matches in upper quartile by pvalue, on the possibility
+  that especially strong motif matches may exhibit a different distribution (they do not appear to)
+  <li><b>KLF1.total.density</b>: FIMO matches (total hits)/ number of open chromatin regions
+  <li><b>KLF1.top.density</b>:   same, but using top hits
+</ul>
+The same quantities were calculated for FLT1:
+<ul>
+  <li><b>FLI1.srm</b>: copy number counts for transcription factor <b>FLI1</b>, bulk SRM
+  <li><b>FLI1.total.hits</b>: using Hsapiens-jaspar2018-FLI1-MA0475.1
+  <li><b>FLI1.top.hits</b>: as above
+  <li><b>FLI1.total.density</b>: as above
+  <li><b>FLI1.top.density </b>: as above
+</ul>
+Jeff has suggested, but I have not yet calculated, the total number of matches of the KLF1 and FLT1
+motifs on the whole genome, to provide a background against which to assess the open chromatin
+matches.
+
+Other normalizations and transformations will occur to you!
+
+
+
+
