@@ -47,6 +47,7 @@ TrenaProjectErythropoiesis <- function(quiet=TRUE)
    expressionDirectory <- system.file(package="TrenaProjectErythropoiesis", "extdata", "expression")
    variantsDirectory <- system.file(package="TrenaProjectErythropoiesis", "extdata", "variants")
    footprintDatabaseHost <- NA_character_;
+   footprintDatabasePort <- NA_integer_;
 
    covariatesFile <- NA_character_;
 
@@ -57,6 +58,7 @@ TrenaProjectErythropoiesis <- function(quiet=TRUE)
    .TrenaProjectErythropoiesis(TrenaProject(supportedGenes=geneSets[[1]],
                                       genomeName=genomeName,
                                       footprintDatabaseHost=footprintDatabaseHost,
+                                      footprintDatabasePort=footprintDatabasePort,
                                       footprintDatabaseNames=footprintDatabaseNames,
                                       expressionDirectory=expressionDirectory,
                                       variantsDirectory=variantsDirectory,
