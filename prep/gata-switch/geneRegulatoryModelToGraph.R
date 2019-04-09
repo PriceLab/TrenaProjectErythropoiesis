@@ -1,3 +1,5 @@
+library(RCyjs)
+#------------------------------------------------------------------------------------------------------------------------
 if(!exists("parseChromLocString"))
    source("~/github/trena/R/utils.R")
 if(!exists("tbl.geneInfo"))
@@ -9,7 +11,6 @@ required.regulatoryRegionsColumnNames <- c("motifName", "chrom", "motifStart", "
 #------------------------------------------------------------------------------------------------------------------------
 geneRegulatoryModelToGraph <- function (target.gene, tbl.gm, tbl.reg)
 {
-   browser()
 
    required.geneModelColumnNames <- c("tf", "betaLasso", "lassoPValue", "pearsonCoeff", "rfScore", "betaRidge",
                                      "spearmanCoeff", "bindingSites",  "sample")
@@ -26,7 +27,7 @@ geneRegulatoryModelToGraph <- function (target.gene, tbl.gm, tbl.reg)
    nodeDataDefaults(g, attr = "label") <- "default node label"
    nodeDataDefaults(g, attr = "distance") <- 0
    nodeDataDefaults(g, attr = "pearson") <- 0
-   nodeDataDefaults(g, attr = "randomForest") <- 0
+   nodeDataDefaults(g, attr = "rfScore") <- 0
    nodeDataDefaults(g, attr = "pcaMax") <- 0
    nodeDataDefaults(g, attr = "concordance") <- 0
    nodeDataDefaults(g, attr = "betaLasso") <- 0
@@ -36,7 +37,7 @@ geneRegulatoryModelToGraph <- function (target.gene, tbl.gm, tbl.reg)
 
    edgeDataDefaults(g, attr = "edgeType") <- "undefined"
 
-   tfs <- tbl.gm$tf
+   tfs <- sort(unique(c(tbl.gm$tf, tbl.reg$tf)))
 
    regRegions.names <- unlist(lapply(1:nrow(tbl.reg), function(i){
        distance.from.tss <- tbl.reg$distance.from.tss[i]
@@ -57,16 +58,13 @@ geneRegulatoryModelToGraph <- function (target.gene, tbl.gm, tbl.reg)
    nodeData(g, regRegions.names, "type")  <- "regulatoryRegion"
    nodeData(g, all.nodes, "label")  <- all.nodes
    nodeData(g, regRegions.names, "label") <- tbl.reg$motifName
-   nodeData(g, regRegions.names, "distance") <- tbl.reg$distance
+   nodeData(g, regRegions.names, "distance") <- tbl.reg$distance.from.tss
    nodeData(g, regRegions.names, "motif") <- tbl.reg$motifName
 
-   nodeData(g, tfs, "pearson") <- tbl.gm$pearson
+   nodeData(g, tfs, "pearson") <- tbl.gm$pearsonCoeff
    nodeData(g, tfs, "betaLasso") <- tbl.gm$betaLasso
-   nodeData(g, tfs, "randomForest") <- tbl.gm$randomForest
-   nodeData(g, tfs, "pcaMax") <- tbl.gm$pcaMax
-   nodeData(g, tfs, "concordance") <- tbl.gm$concordance
+   nodeData(g, tfs, "rfScore") <- tbl.gm$rfScore
 
-   #browser()
    g <- addEdge(tbl.reg$tf, tbl.reg$regionName, g)
    edgeData(g,  tbl.reg$tf, tbl.reg$regionName, "edgeType") <- "bindsTo"
 
@@ -77,21 +75,69 @@ geneRegulatoryModelToGraph <- function (target.gene, tbl.gm, tbl.reg)
 
 } # geneRegulatoryModelToGraph
 #------------------------------------------------------------------------------------------------------------------------
-test_geneRegulatoryModelToGraph <- function()
+addGeneModelLayout <-  function (g, xPos.span=1500)
 {
-   printf("--- test_geneRegulatoryModelToGraph")
-   all.stages <- get(load("modelsAndRegionsAllSamples.RData"))
-   tbl.model <- all.stages[[1]]$model
-   tbl.reg   <- all.stages[[1]]$regulatoryRegions
-   tbl.model <- fixModel(tbl.model)
-   tbl.reg <- fixReg(tbl.reg)
-   graph <- geneRegulatoryModelToGraph("GATA2", tbl.model, tbl.reg)
+    printf("--- addGeneModelLayout")
+    all.distances <- sort(unique(unlist(nodeData(g, attr='distance'), use.names=FALSE)))
+    print(all.distances)
 
-} # test_geneRegulatoryModelToGraph
+    fp.nodes <- nodes(g)[which(unlist(nodeData(g, attr="type"), use.names=FALSE) == "regulatoryRegion")]
+    tf.nodes <- nodes(g)[which(unlist(nodeData(g, attr="type"), use.names=FALSE) == "TF")]
+    targetGene.nodes <- nodes(g)[which(unlist(nodeData(g, attr="type"), use.names=FALSE) == "targetGene")]
+
+     # add in a zero in case all of the footprints are up or downstream of the 0 coordinate, the TSS
+    span.endpoints <- range(c(0, as.numeric(nodeData(g, fp.nodes, attr="distance"))))
+    span <- max(span.endpoints) - min(span.endpoints)
+    footprintLayoutFactor <- 1
+    printf("initial:  span: %d  footprintLayoutFactor: %f", span, footprintLayoutFactor)
+
+    footprintLayoutFactor <- xPos.span/span
+
+    #if(span < 600)  #
+    #   footprintLayoutFactor <- 600/span
+    #if(span > 1000)
+    #   footprintLayoutFactor <- span/1000
+
+    printf("corrected:  span: %d  footprintLayoutFactor: %f", span, footprintLayoutFactor)
+
+    xPos <- as.numeric(nodeData(g, fp.nodes, attr="distance")) * footprintLayoutFactor
+    yPos <- 0
+    nodeData(g, fp.nodes, "xPos") <- xPos
+    nodeData(g, fp.nodes, "yPos") <- yPos
+
+    adjusted.span.endpoints <- range(c(0, as.numeric(nodeData(g, fp.nodes, attr="xPos"))))
+    printf("raw span of footprints: %d   footprintLayoutFactor: %f  new span: %8.0f",
+           span, footprintLayoutFactor, abs(max(adjusted.span.endpoints) - min(adjusted.span.endpoints)))
+
+    tfs <- names(which(nodeData(g, attr="type") == "TF"))
+
+    for(tf in tfs){
+       footprint.neighbors <- edges(g)[[tf]]
+       if(length(footprint.neighbors) > 0){
+          footprint.positions <- as.integer(nodeData(g, footprint.neighbors, attr="xPos"))
+          new.xPos <- mean(footprint.positions)
+          if(is.na(new.xPos)) browser()
+          if(is.nan(new.xPos)) browser()
+          #printf("%8s: %5d", tf, new.xPos)
+          }
+       else{
+          new.xPos <- 0
+          }
+       nodeData(g, tf, "yPos") <- sample(300:1200, 1)
+       nodeData(g, tf, "xPos") <- new.xPos
+       } # for tf
+
+    nodeData(g, targetGene.nodes, "xPos") <- 0
+    nodeData(g, targetGene.nodes, "yPos") <- -200
+
+    g
+
+} # addGeneModelLayout
 #------------------------------------------------------------------------------------------------------------------------
 fixModel <- function(tbl.model)
 {
    colnames(tbl.model)[grep("^gene$", colnames(tbl.model))] <- "tf"
+   colnames(tbl.model)[grep("^rfScore$", colnames(tbl.model))] <- "rfScore"
    return(tbl.model)
 
 } # fixModel
@@ -121,7 +167,6 @@ fixReg <- function(tbl.reg, targetGene)
 
    tbl.new
 
-
 } # fixReg
 #------------------------------------------------------------------------------------------------------------------------
 test_fixReg <- function()
@@ -136,4 +181,25 @@ test_fixReg <- function()
 
 
 } # test_fixReg
+#------------------------------------------------------------------------------------------------------------------------
+test_geneRegulatoryModelToGraph <- function()
+{
+   printf("--- test_geneRegulatoryModelToGraph")
+   all.stages <- get(load("modelsAndRegionsAllSamples.RData"))
+   tbl.model <- all.stages[[1]]$model
+   tbl.reg   <- all.stages[[1]]$regulatoryRegions
+   tbl.model <- fixModel(tbl.model)
+   tbl.reg <- fixReg(tbl.reg, "GATA2")
+   tbl.reg <- subset(tbl.reg, tf %in% tbl.model$tf)
+   graph <- geneRegulatoryModelToGraph("GATA2", tbl.model, tbl.reg)
+   graph.lo <- addGeneModelLayout(graph)
+     # rcy <- RCyjs()
+   deleteGraph(rcy)
+   addGraph(rcy, graph.lo)
+   loadStyleFile(rcy, "trenaStyle.js")
+   fit(rcy, 200)
+   browser()
+   xyz <- 99
+
+} # test_geneRegulatoryModelToGraph
 #------------------------------------------------------------------------------------------------------------------------
