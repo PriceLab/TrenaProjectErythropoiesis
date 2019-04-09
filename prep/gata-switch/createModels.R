@@ -209,6 +209,8 @@ buildModelsAtEachStage <- function()
       tbl.matches <- findTFs(tbl.regions, threshold=1e-5)
       x <- buildModel(unique(tbl.matches$tf), "GATA2")
       x$model$sample <- x$model
+         # just keep regulatory regions whose cognate TF are in the model
+      tbl.matches <- subset(tbl.matches, tf %in% x$model$gene)
       x$regulatoryRegions <- tbl.matches
       models[[currentSample]] <- x
       }

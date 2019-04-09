@@ -75,6 +75,105 @@ geneRegulatoryModelToGraph <- function (target.gene, tbl.gm, tbl.reg)
 
 } # geneRegulatoryModelToGraph
 #------------------------------------------------------------------------------------------------------------------------
+buildMultiModelGraph <- function (models, targetGene)
+{
+
+    g <- graphNEL(edgemode = "directed")
+    model.names <- names(models)
+
+    node.attribute.specs <- list(type="undefined",
+                                 label="default node label",
+                                 distance=0,
+                                 pearson=0,
+                                 randomForest=0,
+                                 pcaMax=0,
+                                 concordance=0,
+                                 betaLasso=0,
+                                 motif="",
+                                 xPos=0,
+                                 yPos=0)
+    edge.attribute.spec <- list(edgeType="undefined")
+    attribute.classes <- c("", model.names)  # "" (no prefix) is the currently displayed set of attibutes
+
+      # create current version of these attributes, and then
+      # per-model versions, which get mapped to current
+      # in response to user's interactive choice on the cyjs user interface
+      # the "current version" is, e.g., "distance".
+      # per-model ("wt" and "mut" versions) become "wt.distance" and "mut.distance"
+      # and are used by copying e.g. all wt.xxx attributes into the current (non-prefixed)
+      # attribute, upon which the cyjs style is defined
+
+    for(class.name in attribute.classes){
+       class.name.prefix <- class.name  # with possible "." appended, permits standard and model-specific attributes
+       if(nchar(class.name) > 0)
+          class.name.prefix <- sprintf("%s.", class.name)
+       noa.names.without.prefix <- names(node.attribute.specs)
+       noa.names <- sprintf("%s%s", class.name.prefix, noa.names.without.prefix)
+       noa.count <- length(node.attribute.specs)
+       for(i in 1:noa.count){
+          nodeDataDefaults(g, attr=noa.names[i]) <- node.attribute.specs[[noa.names.without.prefix[i]]]
+          }
+       } # for class
+
+    edgeDataDefaults(g, attr = "edgeType") <- "undefined"
+
+
+    tfs <- c()
+    regulatoryRegions <- c()
+
+    for(model in models){  # collect all the tf and regulatory region nodes
+       tbl.model <- model$model
+       tfs <- unique(c(tfs, tbl.model$gene))
+       tbl.reg <- model$reg
+       regulatoryRegions <- unique(c(regulatoryRegions, tbl.reg$motif))
+       } # for model
+
+    all.nodes <- unique(c(targetGene, tfs, regulatoryRegions))
+    g <- addNode(all.nodes, g)
+
+    nodeData(g, targetGene, "type") <- "targetGene"
+    nodeData(g, tfs, "type")         <- "TF"
+    nodeData(g, regulatoryRegions, "type")  <- "regulatoryRegion"
+    nodeData(g, all.nodes, "label")  <- all.nodes
+
+      # add edges, edge attribute, and the constant attributes for all of the regulatoryRegion nodes
+
+
+    for(model in models){
+       tfs <- model$regulatoryRegions$tf
+       regRegions <- model$regulatoryRegions$motif
+       suppressWarnings(g <- addEdge(tfs, regRegions, g))
+       edgeData(g,  tfs, regRegions, "edgeType") <- "bindsTo"
+       suppressWarnings(g <- addEdge(regRegions, targetGene, g))
+       edgeData(g, regRegions, targetGene, "edgeType") <- "regulatorySiteFor"
+       nodeData(g, tbl.reg$motif, "label") <- tbl.reg$motif
+       nodeData(g, tbl.reg$motif, "distance") <- tbl.reg$distance.from.tss
+       nodeData(g, tbl.reg$motif, "motif") <- tbl.reg$motif
+       } # for model
+
+      # now copy in the first model's tf node data
+
+    browser()
+    xyz <- "starting buildMultiModelGraph"
+
+    tbl.model <- models[[1]]$model
+    nodeData(g, tbl.model$gene, attr="randomForest") <- tbl.model$randomForest
+    nodeData(g, tbl.model$gene, attr="pearson") <- tbl.model$pearson
+
+     # now copy in each of the model's tf node data in turn
+    model.names <- names(models)
+    for(model.name in model.names){
+       tbl.model <- models[[model.name]]$model
+       noa.name <- sprintf("%s.%s", model.name, "randomForest")
+       nodeData(g,  tbl.model$gene, attr=noa.name) <- tbl.model$rfScore
+       noa.name <- sprintf("%s.%s", model.name, "pearson")
+       nodeData(g,  tbl.model$gene, attr=noa.name) <- tbl.model$pearsonCoeff
+      } # for model.name
+
+    g
+
+} # buildMultiModelGraph
+#------------------------------------------------------------------------------------------------------------------------
 addGeneModelLayout <-  function (g, xPos.span=1500)
 {
     printf("--- addGeneModelLayout")
@@ -202,4 +301,14 @@ test_geneRegulatoryModelToGraph <- function()
    xyz <- 99
 
 } # test_geneRegulatoryModelToGraph
+#------------------------------------------------------------------------------------------------------------------------
+test_buildMultiModelGraph <- function()
+{
+   printf("--- test_geneRegulatoryModelToGraph")
+   all.stages <- get(load("modelsAndRegionsAllSamples.RData"))
+   g.big <- buildMultiModelGraph(all.stages, "GATA2")
+   browser()
+   xyz <- 99
+
+} # test_buildMultiModelGraph
 #------------------------------------------------------------------------------------------------------------------------
