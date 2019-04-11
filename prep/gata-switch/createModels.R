@@ -4,6 +4,15 @@ library(trenaSGM)
 library(FimoClient)
 library(RUnit)
 #------------------------------------------------------------------------------------------------------------------------
+if(!exists("parseChromLocString"))
+   source("~/github/trena/R/utils.R")
+if(!exists("tbl.geneInfo"))
+   tbl.geneInfo <- get(load((system.file(package="TrenaProject", "extdata", "geneInfoTable_hg38.RData"))))
+#------------------------------------------------------------------------------------------------------------------------
+required.regulatoryRegionsColumnNames <- c("motifName", "chrom", "motifStart", "motifEnd", "strand",
+                                           "motifScore", "motifRelativeScore", "match",
+                                           "distance.from.tss", "tf")
+#------------------------------------------------------------------------------------------------------------------------
 mtx <- get(load("~/github/TrenaProjectErythropoiesis/prep/import/rnaFromMarjorie/mtx-rna.RData"))
 mtx <- asinh(mtx)
 
@@ -62,7 +71,13 @@ getATACseq <- function(chromosome, start.loc, end.loc)
 test_getATACseq <- function()
 {
    printf("--- test_getATACseq")
-   x <- getATACseq("chr3", 128495142, 128498398)
+   tbl.atac <- getATACseq("chr3", 128495142, 128498398)
+   samples <- unique(tbl.atac$sample)
+    # "d08_rep1" "d10_rep1" "d10_rep2" "d11_rep1" "d11_rep2" "d12_rep1" "d12_rep2" "d16_rep1" "d16_rep2"
+   for(sample.x in samples){
+      tbl.sample <- subset(tbl.atac, sample==sample.x)[, c("chrom", "start", "end")]
+      write.table(tbl.sample, file=sprintf("tbl.%s.bed", sample.x), quote=FALSE, row.names=FALSE)
+      } # for sample.x
 
 } # test_getATACseq
 #------------------------------------------------------------------------------------------------------------------------
@@ -198,6 +213,117 @@ test_buildModel <- function()
 
 } # test_buildModel
 #------------------------------------------------------------------------------------------------------------------------
+trimModel <- function(tbl.model, tbl.reg, tf.keepers=c(), votesNeeded=3)
+{
+   matched.keeper.rows <- unlist(lapply(tf.keepers, function(tf) grep(tf, tbl.model$gene)))
+
+   # pvals.scores <- 1og10(tbl.model$lassoPValue) * -1
+   pvals <- -log10(tbl.model$lassoPValue)
+   good.lassoPval <- which(pvals > 5)
+
+   good.betaLasso <- which(abs(tbl.model$betaLasso) > 0.1)
+   good.betaRidge <- which(abs(tbl.model$betaRidge) > 0.1)
+
+   spearman.cutoff <- fivenum(abs(tbl.model$spearmanCoeff))[4]
+   good.spearmanCoeff <- which(abs(tbl.model$spearmanCoeff) >= spearman.cutoff)
+
+   randomForest.cutoff <- fivenum(tbl.model$rfScore)[4]
+   forest.tfs <- subset(tbl.model, rfScore >= randomForest.cutoff)$gene
+   good.rfScore <- unlist(lapply(forest.tfs, function(tf) grep(tf, tbl.model$gene)))
+
+   all.counts <- c(good.lassoPval, good.betaLasso, good.betaRidge, good.spearmanCoeff, good.rfScore)
+   tbl.freq <- as.data.frame(table(all.counts), stringsAsFactors=FALSE)
+   colnames(tbl.freq) <- c("rowNumber", "count")
+   tbl.freq <- tbl.freq[order(tbl.freq$count, decreasing=TRUE),]
+   tbl.freq$rowNumber <- as.integer(tbl.freq$rowNumber)
+   good.tf.rows <- subset(tbl.freq, count >= votesNeeded)$rowNumber
+   not.yet.included <- setdiff(matched.keeper.rows, good.tf.rows)
+   if(length(not.yet.included) > 0)
+      good.tf.rows <- c(good.tf.rows, not.yet.included)
+
+   tbl.model <- tbl.model[good.tf.rows,]
+   new.order <- order(abs(tbl.model$spearmanCoeff), decreasing=TRUE)
+   tbl.model <- tbl.model[new.order,]
+   browser()
+
+   tbl.reg <- subset(tbl.reg, tf %in% tbl.model$gene)
+   return(list(model=tbl.model, regulatoryRegions=tbl.reg))
+
+   xyz <- 99
+
+} # trimModel
+#------------------------------------------------------------------------------------------------------------------------
+test_trimModel <- function()
+{
+   printf("--- test_trimModel")
+   x.raw <- get(load("modelsAndRegionsAllSamples-rawNeedTrimming.RData"))
+
+   model.number <- 9
+   tbl.model <- x.raw[[model.number]]$model
+   tbl.reg <- x.raw[[model.number]]$regulatoryRegions
+   x.trimmed <- trimModel(tbl.model, tbl.reg, c("GATA1", "GATA2"), votesNeeded=2)
+   x.final <- fixModelAndRegions(x.trimmed, targetGene="GATA2")
+   checkTrue(all(x.final$regulatoryRegions$tf %in% x.final$model$tf))
+   browser()
+   xyz <- "after trimming"
+
+} # test_trimModel
+#------------------------------------------------------------------------------------------------------------------------
+fixModel <- function(tbl.model)
+{
+   colnames(tbl.model)[grep("^gene$", colnames(tbl.model))] <- "tf"
+   colnames(tbl.model)[grep("^rfScore$", colnames(tbl.model))] <- "rfScore"
+   return(tbl.model)
+
+} # fixModel
+#------------------------------------------------------------------------------------------------------------------------
+fixReg <- function(tbl.reg, targetGene)
+{
+   colnames(tbl.reg)[grep("^start$", colnames(tbl.reg))] <- "motifStart"
+   colnames(tbl.reg)[grep("^stop$", colnames(tbl.reg))] <- "motifEnd"
+   chromLocStrings <- tbl.reg$sequence_name
+   locs <- lapply(chromLocStrings, parseChromLocString)
+   tss <- subset(tbl.geneInfo, geneSymbol==targetGene)$tss
+   strand <- subset(tbl.geneInfo, geneSymbol==targetGene)$strand
+
+   tbl.locs <- as.data.frame(do.call(rbind, locs))
+   tbl.new <- cbind(tbl.locs, tbl.reg)
+   tbl.new$chrom <- as.character(tbl.new$chrom)
+   tbl.new$start <- as.numeric(tbl.new$start)
+   tbl.new$end <- as.numeric(tbl.new$end)
+   tbl.new$motifStart <- tbl.new$motifStart + tbl.new$start
+   tbl.new$motifEnd   <- tbl.new$motifEnd   + tbl.new$start
+   tbl.new$distance.from.tss <- tbl.new$motifStart - tss
+   tbl.new$pValue <- -log10(tbl.new$pValue)
+
+   tbl.new <- tbl.new[, c("motif", "chrom", "motifStart", "motifEnd", "strand",  "pValue", "score",
+                          "matched_sequence", "distance.from.tss", "tf")]
+   colnames(tbl.new) <- required.regulatoryRegionsColumnNames
+
+   tbl.new
+
+} # fixReg
+#------------------------------------------------------------------------------------------------------------------------
+test_fixReg <- function()
+{
+   printf("--- test_fixReg")
+   targetGene <- "GATA2"
+   all.stages <- get(load("modelsAndRegionsAllSamples.RData"))
+
+   tbl.reg   <- all.stages[[1]]$regulatoryRegions
+   tbl.fixed <- fixReg(tbl.reg, targetGene)
+   checkEquals(colnames(tbl.fixed), required.regulatoryRegionsColumnNames)
+
+
+} # test_fixReg
+#------------------------------------------------------------------------------------------------------------------------
+fixModelAndRegions <- function(x, targetGene)
+{
+   result <- list(model=fixModel(x$model), regulatoryRegions=fixReg(x$regulatoryRegions, targetGene))
+   result
+
+} # fixModelAndRegions
+#------------------------------------------------------------------------------------------------------------------------
 buildModelsAtEachStage <- function()
 {
    tbl.atac.all <- getATACseq("chr3", 128481798, 128498370)
@@ -208,70 +334,23 @@ buildModelsAtEachStage <- function()
       tbl.regions <- subset(tbl.atac.all, sample==currentSample)[, c("chrom", "start", "end")]
       tbl.matches <- findTFs(tbl.regions, threshold=1e-5)
       x <- buildModel(unique(tbl.matches$tf), "GATA2")
-      x$model$sample <- x$model
-         # just keep regulatory regions whose cognate TF are in the model
-      tbl.matches <- subset(tbl.matches, tf %in% x$model$gene)
       x$regulatoryRegions <- tbl.matches
-      models[[currentSample]] <- x
+      browser()
+      x2 <- trimModel(x$model, x$regulatoryRegions, c("GATA1", "GATA2"), votesNeeded=3)
+      x3 <- fixModelAndRegions(x2, targetGene="GATA2")
+      browser()
+      x3$model$sample <- currentSample
+         # just keep regulatory regions whose cognate TF are in the model
+      #tbl.matches <- subset(tbl.matches, tf %in% x3$model$gene)
+      #x3$regulatoryRegions <- tbl.matches
+      models[[currentSample]] <- x3
       }
 
    filename <- "modelsAndRegionsAllSamples.RData"
    printf("saving %d models to %s", length(models), filename)
    save(models, file=filename)
+   browser()
+   xyz <- 99
 
 } # buildModelsAtEachStage
 #------------------------------------------------------------------------------------------------------------------------
-#
-#    candidate.tfs <- rownames(subset(tbl.cor, abs(cor) > 0.4))
-#       #  [1] "BACH1"   "BATF"    "DMC1"    "ELF3"    "ELF5"    "ETV5"    "GTF2F1"  "IKZF2"   "IRF1"
-#       # [10] "KLF1"    "KLF13"   "KLF16"   "MAFG"    "MAFK"    "MESP1"   "MTA3"    "NFE2"    "NFIC"
-#       # [19] "PATZ1"   "PAX6"    "PLAGL1"  "PML"     "RARB"    "RARG"    "RXRA"    "SCRT2"   "SIN3A"
-#       # [28] "SMARCC1" "SP2"     "STAT2"   "TAL1"    "TCF12"   "TCF4"    "VDR"     "WRNIP1"  "YY1"
-#       # [37] "ZNF219"  "ZNF263"  "ZNF281"  "ZNF384"  "ZNF740"
-#
-#    build.spec <- list(title="hbb.hs2.motifs",
-#                       type="noDNA.tfsSupplied",
-#                       matrix=mtx.asinh,
-#                       tfPool=allKnownTFs(),
-#                       tfs=candidate.tfs,
-#                       tfPrefilterCorrelation=0.2,
-#                       annotationDbFile=dbfile(org.Hs.eg.db),
-#                       orderModelByColumn="rfScore",
-#                       solverNames=c("lasso", "lassopv", "pearson", "randomForest", "ridge", "spearman"),
-#                       quiet=TRUE)
-#
-#    builder <- NoDnaModelBuilder(genomeName, targetGene,  build.spec, quiet=TRUE)
-#    x <- build(builder)
-#
-# } # buildModel
-# #------------------------------------------------------------------------------------------------------------------------
-# mdb.1 <- query(MotifDb, c("hsapiens", "jaspar2018", "gata2"))
-# mdb.2 <- query(MotifDb, c("hsapiens", "gata1", "hocomoco"))
-# mdb.3 <- query(MotifDb, c("hsapiens", "gata1", "tal1", "jaspar2018"))
-# export(c(mdb.1, mdb.2, mdb.3), con="~/github/fimoService/pfms/gata1-tal1-gata2.meme", format="meme")
-# explore.gata1.gata2.tal1 <- function()
-# {
-#    library(igvR)
-#    igv <- igvR()
-#    setGenome(igv, "hg38")
-#    showGenomicRegion(igv, with(tbl.hs2, sprintf("%s:%d-%d", chrom, start, end)))
-#    tbl.hs2.motifs <- requestMatchForRegions(fc, tbl.hs2, "hg38", 0.0013)
-#    tbl.bedGraph <- tbl.hs2.motifs
-#    tbl.bedGraph$start <- tbl.bedGraph$start + tbl.hs2$start
-#    tbl.bedGraph$stop <- tbl.bedGraph$stop + tbl.hs2$start
-#    tbl.bedGraph$chrom <- tbl.hs2$chrom
-#    tbl.bedGraph <- tbl.bedGraph[, c("chrom", "start", "stop", "motif", "score")]
-#
-#
-#    track <- DataFrameAnnotationTrack("GATA1", tbl.bedGraph[1,], color="brown", displayMode="EXPANDED", trackHeight=30)
-#    displayTrack(igv, track)
-#    track <- DataFrameAnnotationTrack("GATA2", tbl.bedGraph[4,], color="darkgreen", displayMode="EXPANDED", trackHeight=30)
-#    displayTrack(igv, track)
-#    track <- DataFrameAnnotationTrack("GATA1::TAL1", tbl.bedGraph[7,], color="blue", displayMode="EXPANDED", trackHeight=30)
-#    displayTrack(igv, track)
-#
-#
-#
-# } # explore.gata1.gata2.tal1
-#------------------------------------------------------------------------------------------------------------------------
-

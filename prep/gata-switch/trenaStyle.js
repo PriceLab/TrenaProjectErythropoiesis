@@ -23,24 +23,32 @@ vizmap = [
 
    {selector: "node[type='regulatoryRegion']", css: {
        "shape": "roundrectangle",
-       "width": "40px",
+       "width": "5px",
        "height": "30px",
-       "font-size": "8px",
+       "font-size": "0px",
+       "background-color": "lightblue"
+       }},
+
+   {selector: "node[type='regulatoryRegion']:selected", css: {
+       "shape": "roundrectangle",
+       "width": "10px",
+       "height": "30px",
+       "font-size": "40px",
        "background-color": "beige"
        }},
 
    {selector: "node[type='TF'][pearson>0]", css: {
       "shape": "ellipse",
       "background-color": "mapData(pearson, 0, 1.0, white, red)",
-      "width": "mapData(rfScore, 0.0, 10.0, 20.0, 200.0)",
-      "height":"mapData(rfScore, 0.0, 10.0, 20.0, 200.0)"
+      "width": "mapData(expression, 0, 1.0, 20.0, 200.0)",
+      "height":"mapData(expression, 0, 1.0, 20.0, 200.0)"
        }},
 
    {selector: "node[type='targetGene']", css: {
       "shape": "roundrectangle",
-      "background-color": "orange",
-      "width": 400,
-      "height": 200,
+      "background-color": "white",
+      "width": "mapData(expression, 0.0, 1.0, 20.0, 200.0)",
+      "height":"mapData(expression, 0.0, 1.0, 20.0, 200.0)",
       "border-width": 5,
       "font-size": 48
        }},
@@ -48,8 +56,8 @@ vizmap = [
    {selector: "node[type='TF'][pearson<=0]", css: {
       "shape": "ellipse",
       "background-color": "mapData(pearson, -1.0, 0, green, white)",
-      "width": "mapData(rfScore, 0.0, 10.0, 20.0, 200.0)",
-      "height":"mapData(rfScore, 0.0, 10.0, 20.0, 200.0)"
+      "width": "mapData(expression, 0.0, 1.0, 20.0, 200.0)",
+      "height":"mapData(expression, 0.0, 1.0, 20.0, 200.0)"
        }},
 
    {selector: "node[type='tf']", css: {
