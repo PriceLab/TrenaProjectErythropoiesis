@@ -13,7 +13,7 @@
 #'
 
 .TrenaProjectErythropoiesis <- setClass("TrenaProjectErythropoiesis",
-                                  contains="TrenaProject")
+                                  contains="TrenaProjectHG38")
 
 #----------------------------------------------------------------------------------------------------
 #' Define an object of class TrenaProjectErythropoiesis
@@ -31,11 +31,10 @@
 TrenaProjectErythropoiesis <- function(quiet=TRUE)
 
 {
-   genomeName <- "hg38"
-
    directory <- system.file(package="TrenaProjectErythropoiesis", "extdata", "geneSets")
    geneSet.files <- list.files(directory)
    geneSets <- list()
+
    for(file in geneSet.files){
       full.path <- file.path(directory, file)
       genes <- scan(full.path, sep="\t", what=character(0), quiet=TRUE)
@@ -52,19 +51,16 @@ TrenaProjectErythropoiesis <- function(quiet=TRUE)
    covariatesFile <- NA_character_;
 
    stopifnot(file.exists(expressionDirectory))
-   #stopifnot(file.exists(variantsDirectory))
-   # stopifnot(file.exists(covariatesFile))
 
-   .TrenaProjectErythropoiesis(TrenaProject(supportedGenes=geneSets[[1]],
-                                      genomeName=genomeName,
-                                      footprintDatabaseHost=footprintDatabaseHost,
-                                      footprintDatabasePort=footprintDatabasePort,
-                                      footprintDatabaseNames=footprintDatabaseNames,
-                                      expressionDirectory=expressionDirectory,
-                                      variantsDirectory=variantsDirectory,
-                                      covariatesFile=covariatesFile,
-                                      quiet=quiet
-                                      ))
+   .TrenaProjectErythropoiesis(TrenaProjectHG38(supportedGenes=geneSets[[1]],
+                                                footprintDatabaseHost=footprintDatabaseHost,
+                                                footprintDatabasePort=footprintDatabasePort,
+                                                footprintDatabaseNames=footprintDatabaseNames,
+                                                expressionDirectory=expressionDirectory,
+                                                variantsDirectory=variantsDirectory,
+                                                covariatesFile=covariatesFile,
+                                                quiet=quiet
+                                                ))
 
 } # TrenaProjectErythropoiesis, the constructor
 #----------------------------------------------------------------------------------------------------

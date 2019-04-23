@@ -21,7 +21,7 @@ test_constructor <- function()
 {
    message(sprintf("--- test_constructor"))
 
-   checkTrue(all(c("TrenaProjectErythropoiesis", "TrenaProject") %in% is(tpe)))
+   checkTrue(all(c("TrenaProjectErythropoiesis", "TrenaProjectHG38") %in% is(tpe)))
 
 } # test_constructor
 #------------------------------------------------------------------------------------------------------------------------

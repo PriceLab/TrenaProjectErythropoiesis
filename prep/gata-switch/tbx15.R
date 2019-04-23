@@ -8,7 +8,8 @@ state <- new.env(parent=emptyenv())
 #------------------------------------------------------------------------------------------------------------------------
 library (RColorBrewer)
 totalColorCount <- 12
-colors <- brewer.pal(12, "Paired")
+#colors <- brewer.pal(12, "Paired")
+colors <- brewer.pal(8, "Dark2")
 currentColorNumber <- 0
 #------------------------------------------------------------------------------------------------------------------------
 if(!exists("parseChromLocString"))
@@ -103,7 +104,7 @@ displayATACseq <- function(tbl.all)
                                                 GRanges(tbl.all[, c("chrom", "start", "end")])))[, c("seqnames", "start", "end")]
    colnames(tbl.regions.condensed) <- c("chrom", "start", "end")
    tbl.regions.condensed$chrom <- as.character(tbl.regions.condensed$chrom)
-   lapply(tbl.regions, class)
+   lapply(tbl.regions.condensed, class)
 
    state$tbl.regions.condensed <- tbl.regions.condensed
    track <- DataFrameAnnotationTrack("atac combined", tbl.regions.condensed, color="black")
@@ -223,4 +224,30 @@ findLowerFidelityBindingSites <- function()
 
 
 } # findLowerFidelityBindingSites
+#------------------------------------------------------------------------------------------------------------------------
+lookForChIPseq <- function()
+{
+    library(RPostgreSQL)
+      # chipseq, the remap database
+    db <- dbConnect(PostgreSQL(), user= "trena", password="trena", dbname="hg38", host="khaleesi")
+    dbGetQuery(db, "select count(*) from chipseq")  # 80,143,591
+    colnames(dbGetQuery(db, "select * from chipseq limit 3"))
+      # "chrom"     "start"     "endpos"    "tf"        "name"      "strand"    "peakStart" "peakEnd"
+   roi <- "chr3:128,471,624-128,502,021"
+   tbl <- dbGetQuery(db, "select * from chipseq where chrom='chr3' and start >= 128471624 and endpos <= 128502021")
+   dim(tbl)
+   tbl.freq <- as.data.frame(table(tbl$tf))
+   colnames(tbl.freq) <- c("tf", "count")
+   tbl.freq <- tbl.freq[order(tbl.freq$count, decreasing=TRUE),]
+
+    # look for chip-atlas
+    dbGetQuery(db, "select * from pg_database")
+    grep("^chip", dbGetQuery(db, "select datname from pg_database")$datname, value=TRUE)
+
+    db <- dbConnect(PostgreSQL(), user= "trena", password="trena", dbname="chipatlas", host="khaleesi")
+    dbListTables(db)  # experiments peaaks
+    dbGetQuery(db, "select * from experiments limit 3")
+    dbGetQuery(db, "select * from experiments limit 3")[, c("antigen", "cellType")]
+
+} # lookForChIPseq
 #------------------------------------------------------------------------------------------------------------------------
