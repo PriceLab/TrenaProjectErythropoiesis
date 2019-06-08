@@ -4,6 +4,13 @@ library(trenaSGM)
 library(FimoClient)
 library(RUnit)
 #------------------------------------------------------------------------------------------------------------------------
+library (RColorBrewer)
+colors <- brewer.pal(8, "Dark2")
+totalColorCount <- length(colors)
+currentColorNumber <- 0
+#------------------------------------------------------------------------------------------------------------------------
+state <- new.env(parent=emptyenv())
+#------------------------------------------------------------------------------------------------------------------------
 if(!exists("parseChromLocString"))
    source("~/github/trena/R/utils.R")
 if(!exists("tbl.geneInfo"))
@@ -15,13 +22,19 @@ required.regulatoryRegionsColumnNames <- c("motifName", "chrom", "motifStart", "
 #------------------------------------------------------------------------------------------------------------------------
 mtx <- get(load("~/github/TrenaProjectErythropoiesis/prep/import/rnaFromMarjorie/mtx-rna.RData"))
 mtx <- asinh(mtx)
+# added (7 jun 2019)
+sds <- apply(mtx, 1, sd)
+keepers <- names(which(sds > 0.5))
+length(keepers)
+mtx <- mtx[keepers,]
+dim(mtx)
 
-# if(!exists("tpe")){
-#    tpe <- TrenaProjectErythropoiesis()
+if(!exists("tpe")){
+   tpe <- TrenaProjectErythropoiesis()
 #    mtx.name <- "brandLabDifferentiationTimeCourseRNA"
 #    stopifnot(mtx.name %in% getExpressionMatrixNames(tpe))
 #    mtx <- asinh(getExpressionMatrix(tpe, mtx.name))
-#    }
+   }
 
 
 if(!exists("igv")){
@@ -36,6 +49,7 @@ displayGeneHancer <- function(gene)
 {
    setTargetGene(tpe, gene)
    tbl.enhancers <- getEnhancers(tpe)
+   state$enhancers <- tbl.enhancers
    track <- DataFrameQuantitativeTrack("GH", tbl.enhancers[, c("chrom", "start", "end", "combinedScore")],
                                        "brown", autoscale=FALSE, min=0, max=100)
    displayTrack(igv, track)
@@ -81,10 +95,16 @@ test_getATACseq <- function()
 
 } # test_getATACseq
 #------------------------------------------------------------------------------------------------------------------------
-displayATACseq <- function(chromosome, start.loc, end.loc)
+displayATACseq <- function(chromosome, start.loc, end.loc, intersectWithGeneHancer)
 {
    directory <- "../import/atacPeaks"
    files <- grep("narrowPeak$", list.files(directory), value=TRUE)
+
+   tbl.enhancers <- getEnhancers(tpe)
+   gr.enhancers <- GRanges(tbl.enhancers[, c("chrom", "start", "end")])
+
+   tbls.atac <- list()
+
    for(file in files){
       full.path <- file.path(directory, file)
       track.name <- sub("_hg38_macs2_.*$", "", sub("ATAC_Cord_", "", file))
@@ -92,18 +112,31 @@ displayATACseq <- function(chromosome, start.loc, end.loc)
       colnames(tbl.atac) <- c("chrom", "start", "end", "name", "c5", "strand", "c7", "c8", "c9", "c10")
       tbl.atac.region <- subset(tbl.atac, chrom==chromosome & start >= start.loc & end <= end.loc)
       dim(tbl.atac.region)
+      if(intersectWithGeneHancer){
+         #browser()
+         gr.atac.region <- GRanges(tbl.atac.region[, c("chrom", "start", "end")])
+         tbl.overlaps <- as.data.frame(findOverlaps(gr.atac.region, gr.enhancers))
+         colnames(tbl.overlaps) <- c("atac", "geneHancer")
+         tbl.atac.region <- tbl.atac.region[tbl.overlaps$atac,]
+         } # if gh
       #browser()
       #xyz <- "displayATACseq"
+      currentColorNumber <<- (currentColorNumber %% totalColorCount) + 1
+      color <- colors[currentColorNumber]
+      tbls.atac[[file]] <- tbl.atac.region
       track <- DataFrameQuantitativeTrack(track.name, tbl.atac.region[, c("chrom", "start", "end", "c10")],
-                                          "blue", autoscale=FALSE, min=0, max=430)
+                                          color, autoscale=FALSE, min=0, max=430)
       displayTrack(igv, track)
       } # files
+
+   browser()
+   state$tbls.atac <- tbls.atac
 
 } # displayATACseq
 #------------------------------------------------------------------------------------------------------------------------
 findTFs <- function(tbl.regions, threshold=1e-4)
 {
-    FIMO_HOST <- "khaleesi"
+    FIMO_HOST <- "localhost"
     FIMO_PORT <- 60000
 
    if(!exists("fc")){
@@ -137,7 +170,6 @@ test_findTFs <- function()
 buildModel <- function(candidate.tfs, targetGene)
 {
    genome <- "hg38"
-
 
    build.spec <- list(title="gata2.noDNA.allTFs",
                       type="noDNA.tfsSupplied",
@@ -353,4 +385,54 @@ buildModelsAtEachStage <- function()
    xyz <- 99
 
 } # buildModelsAtEachStage
+#------------------------------------------------------------------------------------------------------------------------
+buildModelsWithAtEachStage <- function()
+{
+   tbl.atac.all <- getATACseq("chr3", 128481798, 128498370)
+   samples <- unique(tbl.atac.all$sample)
+   models <- list()
+
+   for(currentSample in samples){
+      tbl.regions <- subset(tbl.atac.all, sample==currentSample)[, c("chrom", "start", "end")]
+      tbl.matches <- findTFs(tbl.regions, threshold=1e-5)
+      x <- buildModel(unique(tbl.matches$tf), "GATA2")
+      x$regulatoryRegions <- tbl.matches
+      browser()
+      x2 <- trimModel(x$model, x$regulatoryRegions, c("GATA1", "GATA2"), votesNeeded=3)
+      x3 <- fixModelAndRegions(x2, targetGene="GATA2")
+      browser()
+      x3$model$sample <- currentSample
+         # just keep regulatory regions whose cognate TF are in the model
+      #tbl.matches <- subset(tbl.matches, tf %in% x3$model$gene)
+      #x3$regulatoryRegions <- tbl.matches
+      models[[currentSample]] <- x3
+      }
+
+   filename <- "modelsAndRegionsAllSamples.RData"
+   printf("saving %d models to %s", length(models), filename)
+   save(models, file=filename)
+   browser()
+   xyz <- 99
+
+} # buildModelsAtEachStage
+#------------------------------------------------------------------------------------------------------------------------
+run <- function()
+{
+   displayGeneHancer("GATA2")
+   x <- getGenomicRegion(igv)
+   shoulder <- 10000
+   displayATACseq(x$chrom, x$start-shoulder, x$end+shoulder, intersectWithGeneHancer=TRUE)
+
+} # run
+#------------------------------------------------------------------------------------------------------------------------
+create.fimo.tf.database <- function()
+{
+   setTargetGene(tpe, "GATA2")
+   tbl.enhancers <- getEnhancers(tpe)
+   tbl.matches <- findTFs(tbl.enhancers, threshold=1e-4)
+   library(RSQLite)
+   db <- dbConnect(SQLite(), "gata2.gh.fimoBindingSites.sqlite")
+   dbWriteTable(db, name="fimoBindingSites", value=tbl.matches, overwrite=TRUE)
+   dbDisconnect(db)
+}
 #------------------------------------------------------------------------------------------------------------------------

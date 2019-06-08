@@ -52,7 +52,8 @@ TrenaProjectErythropoiesis <- function(quiet=TRUE)
 
    stopifnot(file.exists(expressionDirectory))
 
-   .TrenaProjectErythropoiesis(TrenaProjectHG38(supportedGenes=geneSets[[1]],
+   .TrenaProjectErythropoiesis(TrenaProjectHG38(projectName="TrenaProjectErythropoiesis",
+                                                supportedGenes=geneSets[[1]],
                                                 footprintDatabaseHost=footprintDatabaseHost,
                                                 footprintDatabasePort=footprintDatabasePort,
                                                 footprintDatabaseNames=footprintDatabaseNames,

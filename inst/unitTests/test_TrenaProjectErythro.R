@@ -11,9 +11,9 @@ runTests <- function()
    test_constructor()
    test_supportedGenes()
    test_variants()
-   test_footprintDatabases()
    test_expressionMatrices()
    test_setTargetGene()
+   test_buildFimoDatabaseSingleGeneModel_TBX15()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -42,24 +42,23 @@ test_variants <- function()
 
 } # test_variants
 #------------------------------------------------------------------------------------------------------------------------
-test_footprintDatabases <- function()
+test_bindingSiteDatabases <- function()
 {
-   message(sprintf("--- test_footprintDatabases"))
+   message(sprintf("--- test_bindingSiteDatabases"))
 
    expected <- c("extraembryonic_structure_wellington_16", "extraembryonic_structure_wellington_20",
                  "extraembryonic_structure_hint_16", "extraembryonic_structure_hint_20")
    checkTrue(is.na(getFootprintDatabaseNames(tpe)))
    checkTrue(is.na(getFootprintDatabaseHost(tpe)))
 
-} # test_footprintDatabases
+} # test_bindingSiteDatabases
 #------------------------------------------------------------------------------------------------------------------------
 test_expressionMatrices <- function()
 {
-   expected <- c()
+   expected <- c("brandLabDifferentiationTimeCourse-filtered")
    checkTrue(all(expected %in% getExpressionMatrixNames(tpe)))
-
-   # mtx <- getExpressionMatrix(tpe, expected[1])
-   # checkEquals(dim(mtx), c(6890, 14))
+   mtx <- getExpressionMatrix(tpe, expected[1])
+   checkEquals(dim(mtx), c(16173, 28))
 
 } # test_expressionMatrices
 #------------------------------------------------------------------------------------------------------------------------
@@ -109,44 +108,57 @@ test_setTargetGene <- function()
 
 } # test_setTargetGene
 #------------------------------------------------------------------------------------------------------------------------
-test_buildSingleGeneModel_noDNA <- function()
+test_buildFimoDatabaseSingleGeneModel_TBX15 <- function()
 {
-   printf("--- test_buildSingleGeneModel_noDNA")
+   printf("--- test_buildFimoDatabaseSingleGeneModel_TBX15")
    require("trenaSGM")
 
    genome <- "hg38"
    targetGene <- "GATA2"
+   setTargetGene(tpe, targetGene)
 
-   mtx.name <- "brandLabDifferentiationTimeCourseRNA"
+   chromosome <- "chr3"
+   tss <- 128493185
+   upstream <- 5000
+   downstream <- 5000
+      # strand-aware start and end: GATA2 is on the minus strand
+   start <- tss - downstream
+   end   <- tss + upstream
+   tbl.regions <- data.frame(chrom=chromosome, start=start, end=end, stringsAsFactors=FALSE)
+
+   mtx.name <- "brandLabDifferentiationTimeCourse-filtered"
    checkTrue(mtx.name %in% getExpressionMatrixNames(tpe))
-   mtx <- asinh(getExpressionMatrix(tpe, mtx.name))
+   mtx <- getExpressionMatrix(tpe, mtx.name)
 
+   db.name <- system.file(package="TrenaProjectErythropoiesis", "extdata", "fimoDBs", "gata2.gh.fimoBindingSites.sqlite")
+   checkTrue(file.exists(db.name))
 
-   candidate.tfs <- allKnownTFs()
-   candidate.tfs <- c("MAZ", "SP4", "SP2", "SP3", "SP1", "ZFX", "ZN148")
-
-   build.spec <- list(title="gata2.noDNA.allTFs",
-                      type="noDNA.tfsSupplied",
+   build.spec <- list(title="fimo.5000up.5000down",
+                      type="fimo.database",
+                      regions=tbl.regions,
+                      geneSymbol=targetGene,
+                      tss=tss,
                       matrix=mtx,
-                      tfPool=allKnownTFs(),
-                      tfs=candidate.tfs,
-                      tfPrefilterCorrelation=0.1,
+                      db.host="localhost",
+                      db.port=NA_integer_,
+                      databases=list(db.name),
                       annotationDbFile=dbfile(org.Hs.eg.db),
+                      motifDiscovery="fimoDatabase",
+                      tfPool=allKnownTFs(),
+                      tfMapping="MotifDB",
+                      tfPrefilterCorrelation=0.4,
+                      maxModelSize=10,
                       orderModelByColumn="rfScore",
-                      solverNames=c("lasso", "lassopv", "pearson", "randomForest", "ridge", "spearman"),
-                      quiet=TRUE)
+                      solverNames=c("lasso", "lassopv", "pearson", "randomForest", "ridge", "spearman"))
 
-   builder <- NoDnaModelBuilder(genome, targetGene,  build.spec, quiet=TRUE)
+   builder <- FimoDatabaseModelBuilder(genome, targetGene,  build.spec, quiet=TRUE)
    x <- build(builder)
+
+   checkTrue(all(c("model", "regulatoryRegions") %in% names(x)))
    tbl.model <- x$model
-   dim(tbl.model)
+   checkEquals(nrow(tbl.model), 10)
 
-   checkEquals(dim(x$regulatoryRegions), c(0,0))
-   checkTrue(all(tbl.model$peasonCoeff > 0.7))
-      # the order
-   checkEquals(tbl.model$gene, c("PLEK", "IRF5", "IKZF1", "LYL1", "SPI1", "TFEC"))
-
-} # test_buildSingleGeneModel_noDNA
+} # test_buildFimoDatabaseSingleGeneModel_TBX15
 #------------------------------------------------------------------------------------------------------------------------
 if(!interactive())
    runTests()

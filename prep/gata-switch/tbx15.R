@@ -43,7 +43,7 @@ displayGeneHancer <- function(gene)
 #------------------------------------------------------------------------------------------------------------------------
 getATACseq <- function(chromosome, start.loc, end.loc)
 {
-   directory <- "../import/atacPeaks"
+   directory <- "~/github/TrenaProjectErythropoiesis/prep/import/atacPeaks"
    files <- grep("narrowPeak$", list.files(directory), value=TRUE)
    result <- list()
 
