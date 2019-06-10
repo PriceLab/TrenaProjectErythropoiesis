@@ -83,7 +83,8 @@ makeAtacBasedModels <- function()
   stopifnot("atac.regions.by.sample" %in% names(state))
   models <- list()
   samples <- names(state$atac.regions.by.sample)
-  for(sample.x in samples){
+  for(sample.x in samples[1:2]){
+     printf("--- build model with sample %s", sample.x)
      tbl.regions <- state$atac.regions.by.sample[[sample.x]]
      models[[sample.x]] <- buildModel(tbl.regions)
      } # for sample.x
@@ -96,12 +97,13 @@ buildModel <- function(tbl.regions)
 {
    genome <- "hg38"
    tss <- getTranscriptsTable(tp)$tss[1]
-   mtx.name <- "brandLabDiffentiationTimeCourse-27171x28"
+   mtx.name <- "brandLabDifferentiationTimeCourse-27171x28"
    stopifnot(mtx.name %in% getExpressionMatrixNames(tp))
    mtx <- getExpressionMatrix(tp, mtx.name)
    dim(mtx)
 
-   db.name <- system.file(package="TrenaProjectErythropoiesis", "extdata", "fimoDBs", "gata2.gh.fimoBindingSites.sqlite")
+   #db.name <- system.file(package="TrenaProjectErythropoiesis", "extdata", "fimoDBs", "gata2.gh.fimoBindingSites.sqlite")
+  db.name <- "fimoResults-10e-3-chr3-128383794-128647775.sqlite"
    stopifnot(file.exists(db.name))
 
    recipe <- list(title="fimo.atacseq",
@@ -118,7 +120,7 @@ buildModel <- function(tbl.regions)
                   tfPool=allKnownTFs(),
                   tfMapping="MotifDB",
                   tfPrefilterCorrelation=0.4,
-                  maxModelSize=10,
+                  maxModelSize=100,
                   orderModelByColumn="rfScore",
                   solverNames=c("lasso", "lassopv", "pearson", "randomForest", "ridge", "spearman"))
 
@@ -157,70 +159,81 @@ hopeRestored <- function()
 
 } # hopeRestored
 #------------------------------------------------------------------------------------------------------------------------
+buildModel <- function(tbl.regions)
+{
+
+} # buildModel
 # see the correlation which strengthens the "TBX15 represses GATA2" hypothesis:
 #   plot(mtx["GATA2",], ylim=c(0,12), col="blue")
 #   points(mtx["TBX15",], col="darkgreen")
-reproduce_TBX15_represses_GATA2_hypothesis <- function()
+# reproduce_TBX15_represses_GATA2_hypothesis <- function()
+# {
+#    printf("--- reproduce_TBX15_represses_GATA2_hypothesis")
+#
+#    genome <- "hg38"
+#    targetGene <- "GATA2"
+#    setTargetGene(tp, targetGene)
+#
+#    chromosome <- "chr3"
+#    tss <- 128493185
+#    upstream <- 5000
+#    downstream <- 5000
+#       # strand-aware start and end: GATA2 is on the minus strand
+#    start <- tss - downstream
+#    end   <- tss + upstream
+#
+#    tbl.enhancers <- getEnhancers(tp)
+#    gr.enhancers <- GRanges(tbl.enhancers)
+#    atac.directory <- "../../../prep/import/atacPeaks"
+#    tbl.atac <- read.table(file.path(atac.directory, "ATAC_Cord_d04_rep1_hg38_macs2_default_peaks.narrowPeak"),
+#                           sep="\t", as.is=TRUE, nrow=-1)[, 1:3]
+#    colnames(tbl.atac) <- c("chrom", "start", "end") #, "name", "wdith", "strand", "score1", "score2", "score3", "score4")
+#
+#    gr.atac <- GRanges(tbl.atac)
+#    tbl.ov <- as.data.frame(findOverlaps(gr.atac, gr.enhancers))
+#    tbl.ov
+#    tbl.regions <- tbl.atac[unique(tbl.ov[,1]),]
+#    rownames(tbl.regions) <- NULL
+#
+#    mtx.name <- "brandLabDifferentiationTimeCourse-filtered"
+#    checkTrue(mtx.name %in% getExpressionMatrixNames(tp))
+#    mtx <- getExpressionMatrix(tp, mtx.name)
+#
+#    db.name <- system.file(package="TrenaProjectErythropoiesis", "extdata", "fimoDBs", "gata2.gh.fimoBindingSites.sqlite")
+#    checkTrue(file.exists(db.name))
+#
+#    build.spec <- list(title="fimo.5000up.5000down",
+#                       type="fimo.database",
+#                       regions=tbl.regions,
+#                       geneSymbol=targetGene,
+#                       tss=tss,
+#                       matrix=mtx,
+#                       db.host="localhost",
+#                       db.port=NA_integer_,
+#                       databases=list(db.name),
+#                       annotationDbFile=dbfile(org.Hs.eg.db),
+#                       motifDiscovery="fimoDatabase",
+#                       tfPool=allKnownTFs(),
+#                       tfMapping="MotifDB",
+#                       tfPrefilterCorrelation=0.4,
+#                       maxModelSize=10,
+#                       orderModelByColumn="rfScore",
+#                       solverNames=c("lasso", "lassopv", "pearson", "randomForest", "ridge", "spearman"))
+#
+#    builder <- FimoDatabaseModelBuilder(genome, targetGene,  build.spec, quiet=TRUE)
+#    x <- build(builder)
+#
+#    checkTrue(all(c("model", "regulatoryRegions") %in% names(x)))
+#    tbl.model <- x$model
+#    checkEquals(nrow(tbl.model), 10)
+#
+#
+# } # reproduce_TBX15_represses_GATA2_hypothesis
+#------------------------------------------------------------------------------------------------------------------------
+run <- function()
 {
-   printf("--- reproduce_TBX15_represses_GATA2_hypothesis")
+   display_ATACseq_in_enhancers()
+   makeAtacBasedModels()
 
-   genome <- "hg38"
-   targetGene <- "GATA2"
-   setTargetGene(tpe, targetGene)
-
-   chromosome <- "chr3"
-   tss <- 128493185
-   upstream <- 5000
-   downstream <- 5000
-      # strand-aware start and end: GATA2 is on the minus strand
-   start <- tss - downstream
-   end   <- tss + upstream
-
-   tbl.enhancers <- getEnhancers(tpe)
-   gr.enhancers <- GRanges(tbl.enhancers)
-   atac.directory <- "../../prep/import/atacPeaks"
-   tbl.atac <- read.table(file.path(atac.directory, "ATAC_Cord_d04_rep1_hg38_macs2_default_peaks.narrowPeak"),
-                          sep="\t", as.is=TRUE, nrow=-1)[, 1:3]
-   colnames(tbl.atac) <- c("chrom", "start", "end") #, "name", "wdith", "strand", "score1", "score2", "score3", "score4")
-
-   gr.atac <- GRanges(tbl.atac)
-   tbl.ov <- as.data.frame(findOverlaps(gr.atac, gr.enhancers))
-   tbl.ov
-   tbl.regions <- tbl.atac[unique(tbl.ov[,1]),]
-   rownames(tbl.regions) <- NULL
-
-   mtx.name <- "brandLabDifferentiationTimeCourse-filtered"
-   checkTrue(mtx.name %in% getExpressionMatrixNames(tpe))
-   mtx <- getExpressionMatrix(tpe, mtx.name)
-
-   db.name <- system.file(package="TrenaProjectErythropoiesis", "extdata", "fimoDBs", "gata2.gh.fimoBindingSites.sqlite")
-   checkTrue(file.exists(db.name))
-
-   build.spec <- list(title="fimo.5000up.5000down",
-                      type="fimo.database",
-                      regions=tbl.regions,
-                      geneSymbol=targetGene,
-                      tss=tss,
-                      matrix=mtx,
-                      db.host="localhost",
-                      db.port=NA_integer_,
-                      databases=list(db.name),
-                      annotationDbFile=dbfile(org.Hs.eg.db),
-                      motifDiscovery="fimoDatabase",
-                      tfPool=allKnownTFs(),
-                      tfMapping="MotifDB",
-                      tfPrefilterCorrelation=0.4,
-                      maxModelSize=10,
-                      orderModelByColumn="rfScore",
-                      solverNames=c("lasso", "lassopv", "pearson", "randomForest", "ridge", "spearman"))
-
-   builder <- FimoDatabaseModelBuilder(genome, targetGene,  build.spec, quiet=TRUE)
-   x <- build(builder)
-
-   checkTrue(all(c("model", "regulatoryRegions") %in% names(x)))
-   tbl.model <- x$model
-   checkEquals(nrow(tbl.model), 10)
-
-
-} # reproduce_TBX15_represses_GATA2_hypothesis
+} # run
 #------------------------------------------------------------------------------------------------------------------------

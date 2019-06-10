@@ -13,7 +13,6 @@ runTests <- function()
    test_variants()
    test_expressionMatrices()
    test_setTargetGene()
-   test_buildFimoDatabaseSingleGeneModel_TBX15()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -55,7 +54,8 @@ test_bindingSiteDatabases <- function()
 #------------------------------------------------------------------------------------------------------------------------
 test_expressionMatrices <- function()
 {
-   expected <- c("brandLabDifferentiationTimeCourse-filtered")
+   expected <- c("brandLabDifferentiationTimeCourse-16173x28", "brandLabDifferentiationTimeCourse-27171x28")
+
    checkTrue(all(expected %in% getExpressionMatrixNames(tpe)))
    mtx <- getExpressionMatrix(tpe, expected[1])
    checkEquals(dim(mtx), c(16173, 28))
@@ -108,57 +108,6 @@ test_setTargetGene <- function()
 
 } # test_setTargetGene
 #------------------------------------------------------------------------------------------------------------------------
-test_buildFimoDatabaseSingleGeneModel_TBX15 <- function()
-{
-   printf("--- test_buildFimoDatabaseSingleGeneModel_TBX15")
-   require("trenaSGM")
-
-   genome <- "hg38"
-   targetGene <- "GATA2"
-   setTargetGene(tpe, targetGene)
-
-   chromosome <- "chr3"
-   tss <- 128493185
-   upstream <- 5000
-   downstream <- 5000
-      # strand-aware start and end: GATA2 is on the minus strand
-   start <- tss - downstream
-   end   <- tss + upstream
-   tbl.regions <- data.frame(chrom=chromosome, start=start, end=end, stringsAsFactors=FALSE)
-
-   mtx.name <- "brandLabDifferentiationTimeCourse-filtered"
-   checkTrue(mtx.name %in% getExpressionMatrixNames(tpe))
-   mtx <- getExpressionMatrix(tpe, mtx.name)
-
-   db.name <- system.file(package="TrenaProjectErythropoiesis", "extdata", "fimoDBs", "gata2.gh.fimoBindingSites.sqlite")
-   checkTrue(file.exists(db.name))
-
-   build.spec <- list(title="fimo.5000up.5000down",
-                      type="fimo.database",
-                      regions=tbl.regions,
-                      geneSymbol=targetGene,
-                      tss=tss,
-                      matrix=mtx,
-                      db.host="localhost",
-                      db.port=NA_integer_,
-                      databases=list(db.name),
-                      annotationDbFile=dbfile(org.Hs.eg.db),
-                      motifDiscovery="fimoDatabase",
-                      tfPool=allKnownTFs(),
-                      tfMapping="MotifDB",
-                      tfPrefilterCorrelation=0.4,
-                      maxModelSize=10,
-                      orderModelByColumn="rfScore",
-                      solverNames=c("lasso", "lassopv", "pearson", "randomForest", "ridge", "spearman"))
-
-   builder <- FimoDatabaseModelBuilder(genome, targetGene,  build.spec, quiet=TRUE)
-   x <- build(builder)
-
-   checkTrue(all(c("model", "regulatoryRegions") %in% names(x)))
-   tbl.model <- x$model
-   checkEquals(nrow(tbl.model), 10)
-
-} # test_buildFimoDatabaseSingleGeneModel_TBX15
 #------------------------------------------------------------------------------------------------------------------------
 if(!interactive())
    runTests()

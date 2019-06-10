@@ -44,3 +44,4 @@ findBindingSites <- function(tbl.regions, threshold=1e-2)
 tbl.fimo <- findBindingSites(tbl.regions, threshold=1e-2)
 save(tbl.fimo, file="tbl.fimo.RData")
 
+
