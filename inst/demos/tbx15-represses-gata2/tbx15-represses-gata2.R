@@ -103,7 +103,7 @@ buildModel <- function(tbl.regions)
    dim(mtx)
 
    #db.name <- system.file(package="TrenaProjectErythropoiesis", "extdata", "fimoDBs", "gata2.gh.fimoBindingSites.sqlite")
-  db.name <- "fimoResults-10e-3-chr3-128383794-128647775.sqlite"
+   db.name <- "fimoResults-10e-3-chr3-128383794-128647775.sqlite"
    stopifnot(file.exists(db.name))
 
    recipe <- list(title="fimo.atacseq",
@@ -121,6 +121,7 @@ buildModel <- function(tbl.regions)
                   tfMapping="MotifDB",
                   tfPrefilterCorrelation=0.4,
                   maxModelSize=100,
+                  fimoPValueThreshold=1e-5,,
                   orderModelByColumn="rfScore",
                   solverNames=c("lasso", "lassopv", "pearson", "randomForest", "ridge", "spearman"))
 
@@ -159,10 +160,10 @@ hopeRestored <- function()
 
 } # hopeRestored
 #------------------------------------------------------------------------------------------------------------------------
-buildModel <- function(tbl.regions)
-{
-
-} # buildModel
+# buildModel <- function(tbl.regions)
+# {
+#
+# } # buildModel
 # see the correlation which strengthens the "TBX15 represses GATA2" hypothesis:
 #   plot(mtx["GATA2",], ylim=c(0,12), col="blue")
 #   points(mtx["TBX15",], col="darkgreen")
