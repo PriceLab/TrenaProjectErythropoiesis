@@ -65,13 +65,13 @@ test_expressionMatrices <- function()
 #------------------------------------------------------------------------------------------------------------------------
 test_genomicRegions <- function()
 {
-   expected <- c("brand_d04_rep1", "brand_d04_rep2", "brand_d08_rep1", "brand_d10_rep1", "brand_d10_rep2",
-                 "brand_d11_rep1", "brand_d11_rep2", "brand_d12_rep1", "brand_d12_rep2", "brand_d16_rep1",
-                 "brand_d16_rep2", "prepFiles.R")
+   expected <- c("ATAC_brand_d04_rep1", "ATAC_brand_d04_rep2", "ATAC_brand_d08_rep1", "ATAC_brand_d10_rep1",
+                 "ATAC_brand_d10_rep2", "ATAC_brand_d11_rep1", "ATAC_brand_d11_rep2", "ATAC_brand_d12_rep1",
+                 "ATAC_brand_d12_rep2", "ATAC_brand_d16_rep1", "ATAC_brand_d16_rep2", "prepFiles.R")
 
    checkTrue(all(expected %in% getGenomicRegionsDatasetNames(tpe)))
 
-   tbl.atac <- getGenomicRegionsDataset(tpe, "brand_d04_rep2")
+   tbl.atac <- getGenomicRegionsDataset(tpe, "ATAC_brand_d04_rep2")
    checkEquals(dim(tbl.atac), c(133208, 10))
 
 } # test_expressionMatrices

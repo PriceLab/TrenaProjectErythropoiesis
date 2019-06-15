@@ -33,7 +33,7 @@ to.RData.files <- function()
       track.name <- sub("_hg38_macs2_.*$", "", sub("ATAC_Cord_", "", file))
       tbl.atac <- read.table(full.path, sep="\t", as.is=TRUE)
       colnames(tbl.atac) <- c("chrom", "start", "end", "name", "c5", "strand", "c7", "c8", "c9", "c10")
-      save(tbl.atac, file=sprintf("brand_%s.RData", track.name))
+      save(tbl.atac, file=sprintf("ATAC_brand_%s.RData", track.name))
       } # for file
 
 
