@@ -12,6 +12,7 @@ runTests <- function()
    test_supportedGenes()
    test_variants()
    test_expressionMatrices()
+   test_genomicRegions()
    test_setTargetGene()
 
 } # runTests
@@ -28,7 +29,7 @@ test_supportedGenes <- function()
 {
    message(sprintf("--- test_supportedGenes"))
 
-   subset.expected <- c("Abca1")
+   subset.expected <- c("GATA2")
    checkTrue(all(subset.expected %in% getSupportedGenes(tpe)))
 
 } # test_supportedGenes
@@ -59,6 +60,19 @@ test_expressionMatrices <- function()
    checkTrue(all(expected %in% getExpressionMatrixNames(tpe)))
    mtx <- getExpressionMatrix(tpe, expected[1])
    checkEquals(dim(mtx), c(16173, 28))
+
+} # test_expressionMatrices
+#------------------------------------------------------------------------------------------------------------------------
+test_genomicRegions <- function()
+{
+   expected <- c("brand_d04_rep1", "brand_d04_rep2", "brand_d08_rep1", "brand_d10_rep1", "brand_d10_rep2",
+                 "brand_d11_rep1", "brand_d11_rep2", "brand_d12_rep1", "brand_d12_rep2", "brand_d16_rep1",
+                 "brand_d16_rep2", "prepFiles.R")
+
+   checkTrue(all(expected %in% getGenomicRegionsDatasetNames(tpe)))
+
+   tbl.atac <- getGenomicRegionsDataset(tpe, "brand_d04_rep2")
+   checkEquals(dim(tbl.atac), c(133208, 10))
 
 } # test_expressionMatrices
 #------------------------------------------------------------------------------------------------------------------------
