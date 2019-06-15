@@ -67,9 +67,11 @@ test_genomicRegions <- function()
 {
    expected <- c("ATAC_brand_d04_rep1", "ATAC_brand_d04_rep2", "ATAC_brand_d08_rep1", "ATAC_brand_d10_rep1",
                  "ATAC_brand_d10_rep2", "ATAC_brand_d11_rep1", "ATAC_brand_d11_rep2", "ATAC_brand_d12_rep1",
-                 "ATAC_brand_d12_rep2", "ATAC_brand_d16_rep1", "ATAC_brand_d16_rep2", "prepFiles.R")
+                 "ATAC_brand_d12_rep2", "ATAC_brand_d16_rep1", "ATAC_brand_d16_rep2")
 
-   checkTrue(all(expected %in% getGenomicRegionsDatasetNames(tpe)))
+   dataset.names <- getGenomicRegionsDatasetNames(tpe)
+   checkTrue(all(expected %in% dataset.names))
+   checkTrue(!"prepFiles.R" %in% dataset.names)
 
    tbl.atac <- getGenomicRegionsDataset(tpe, "ATAC_brand_d04_rep2")
    checkEquals(dim(tbl.atac), c(133208, 10))
