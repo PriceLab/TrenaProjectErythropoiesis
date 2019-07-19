@@ -1,0 +1,13 @@
+print(load("~/github/TrenaProjectErythropoiesis/prep/import/rnaFromMarjorie/mtx-rna.RData"))
+print(load("SRMforPublication20190614.RData"))
+dim(mtx)
+fivenum(mtx["GATA1",])
+fivenum(mtx["SPI1",])
+plot(mtx["GATA1",], type="b", ylim=c(0,34000), col="blue")
+lines(mtx["SPI1",], type="b", col="red")
+
+quartz()
+fivenum(mtx.srm["GATA1",])
+fivenum(mtx.srm["SPI1",])
+plot(mtx.srm["GATA1",], type="b", ylim=c(0,60000), col="blue")
+lines(mtx.srm["SPI1",], type="b", col="red")
