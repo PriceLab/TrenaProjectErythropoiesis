@@ -10,7 +10,7 @@ ui <- fluidPage(
    titlePanel("mRNA vs protein counts"),
    sidebarLayout(
       sidebarPanel(
-         sliderInput("dayNumberSlider", label = "Day:", min = 0, max = 16, value = 0, step = 1, round=TRUE),
+         sliderInput("dayNumberSlider", label = "Day:", min = 0, max = 12, value = 0, step = 1, round=TRUE),
          width=2
          ),
       mainPanel(
@@ -33,7 +33,11 @@ server <- function(input, output) {
      stopifnot(length(rna) == length(srm))
      data <- list(values=lapply(seq_len(day+1), function(i) return(list(x=rna[i], y=srm[i]))),
                   xMax=xMax, yMax=yMax)
-     #print(data)
+     #browser()
+     #printf("--- day %d, x", day)
+     #print(as.numeric(lapply(data$values, function(e) e$x)))
+     #printf("--- y")
+     #print(as.numeric(lapply(data$values, function(e) e$y)))
      r2d3(data, script = "demo-reSize.js")
     })
 }

@@ -94,7 +94,7 @@ r2d3.onRender(function(data, svg, width, height, options){
        .attr("cy", function (d) {return yScalingFunction(d.y);})
         .style("opacity", function(d, i){
             //console.log("i: " + i + "  length of data: " + plotData.length);
-            opacity = 0.3;
+            opacity = 0.0;
             if((focalEntry-1) == i){
                opacity = 1.0
                }
