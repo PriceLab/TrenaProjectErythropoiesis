@@ -1,5 +1,5 @@
-mtx.rna <- as.matrix(read.table("rna.txt", sep="\t", as.is=TRUE, header=TRUE, row.names=1, nrow=-1))
-mtx.srm <- as.matrix(read.table("srm.txt", sep="\t", as.is=TRUE, header=TRUE, row.names=1, nrow=-1))
+mtx.rna <- as.matrix(read.table("rna.tsv", sep="\t", as.is=TRUE, header=TRUE, row.names=1, nrow=-1))
+mtx.srm <- as.matrix(read.table("srm.tsv", sep="\t", as.is=TRUE, header=TRUE, row.names=1, nrow=-1))
 dim(mtx.rna)
 dim(mtx.srm)
 
