@@ -16,6 +16,8 @@ ui <- fluidPage(
    titlePanel("mRNA vs protein counts"),
    sidebarLayout(
       sidebarPanel(
+         radioButtons("transformChoices", "Data Transform",
+                      c("None", "Normalized", "Arcsinh")),
          selectInput("geneSelector", "", goi, selected=rownames(mtx.rna)[1],  multiple=FALSE),
          #actionButton("forwardTimeStepButton", "+", style="margin-bottom: 20px; margin-left: 20px; font-size:200%"),
          #actionButton("backwardTimeStepButton", "-", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
