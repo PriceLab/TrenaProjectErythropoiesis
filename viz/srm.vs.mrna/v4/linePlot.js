@@ -3,7 +3,6 @@ srmData = data.srm
 xMax = data.xMax
 yMax = data.yMax
 
-
 var d3Div = document.getElementById("d3");
 var actual_width = d3Div.clientWidth;
 var actual_height = d3Div.clientHeight;
@@ -72,46 +71,42 @@ var line = d3.line()
    .y(function(d) { return yScalingFunction(d.y); }) // set the y values for the line generator 
    .curve(d3.curveLinear) // apply smoothing to the line
 
-//r2d3.svg.append("g")
-//    .attr("class", "x axis")
-//    .attr("transform", "translate(0," + height + ")")
-//    .call(d3.axisBottom(xScalingFunction)); // Create an axis component with d3.axisBottom
+//------------------------------------------------------------------------------------------------------------------------
+r2d3.onRender(function(data, svg, width, height, options){
 
-//r2d3.svg.append("g")
-//    .attr("class", "y axis")
-//    .call(d3.axisLeft(yScalingFunction)); // Create an axis component with d3.axisLeft
+  console.log("cmd: " + data.cmd)
+  var dataset = data.srm
 
-var dataset = data.srm
-
-//r2d3.svg.append("path")
-plottingSurface.append("path")
+  plottingSurface.selectAll("*").remove()
+    
+  plottingSurface.append("path")
     .datum(dataset) // 10. Binds data to the line 
-    .attr("class", "line") // Assign a class for styling 
+    .attr("class", "line_srm") // Assign a class for styling 
     .attr("d", line); // 11. Calls the line generator 
 
-//r2d3.svg.selectAll("dot")
-plottingSurface.selectAll("dot")
+  plottingSurface.selectAll("dot")
     .data(dataset)
-  .enter().append("circle") // Uses the enter().append() method
-    .attr("class", "dot") // Assign a class for styling
+    .enter().append("circle") // Uses the enter().append() method
+      .attr("class", "dot") // Assign a class for styling
+      .attr("cx", function(d) { return xScalingFunction(d.x) })
+      .attr("cy", function(d) { return yScalingFunction(d.y) })
+      .attr("r", 10)
+
+  var dataset = data.rna
+
+  plottingSurface.append("path")
+    .datum(dataset) // 10. Binds data to the line 
+    .attr("class", "line_rna") // Assign a class for styling 
+    .attr("d", line); // 11. Calls the line generator 
+
+  plottingSurface.selectAll("dot")
+   .data(dataset)
+   .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dotrna") // Assign a class for styling
     .attr("cx", function(d) { return xScalingFunction(d.x) })
     .attr("cy", function(d) { return yScalingFunction(d.y) })
     .attr("r", 10)
 
-var dataset = data.rna
-
-// r2d3.svg.append("path")
-plottingSurface.append("path")
-    .datum(dataset) // 10. Binds data to the line 
-    .attr("class", "line") // Assign a class for styling 
-    .attr("d", line); // 11. Calls the line generator 
-
-//r2d3.svg.selectAll("dot")
-plottingSurface.selectAll("dot")
-    .data(dataset)
-  .enter().append("circle") // Uses the enter().append() method
-    .attr("class", "dot") // Assign a class for styling
-    .attr("cx", function(d) { return xScalingFunction(d.x) })
-    .attr("cy", function(d) { return yScalingFunction(d.y) })
-    .attr("r", 10)
+}) // onRender
+//------------------------------------------------------------------------------------------------------------------------
 

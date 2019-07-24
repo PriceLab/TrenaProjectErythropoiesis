@@ -3,20 +3,24 @@ library(devtools)
 library(r2d3)
 #------------------------------------------------------------------------------------------------------------------------
 load("~/github/TrenaProjectErythropoiesis/prep/import/srm-rna-averaged-final-for-paper/srm.rna.averaged.clean.RData")
+mtx.rna <- asinh(mtx.rna)
+mtx.srm <- asinh(mtx.srm)
 
 #mtx.srm <- get(load("~/github/TrenaProjectErythropoiesis/viz/srm.vs.mrna/SRMforPublication20190614.RData"))
 #mtx.rna <- get(load("~/github/TrenaProjectErythropoiesis/prep/import/rnaFromMarjorie/mtx-rna.RData"))
 max.time.points <- 13
+goi <- c("GATA1", "SPI1", head(rownames(mtx.rna)))
 #------------------------------------------------------------------------------------------------------------------------
 ui <- fluidPage(
    tags$head(tags$style("#d3{height:90vh !important;}")),
    titlePanel("mRNA vs protein counts"),
    sidebarLayout(
       sidebarPanel(
-         selectInput("geneSelector", "", head(rownames(mtx.rna)), selected=rownames(mtx.rna)[1],  multiple=FALSE),
-         actionButton("forwardTimeStepButton", "+", style="margin-bottom: 20px; margin-left: 100px; font-size:200%"),
-         actionButton("backwardTimeStepButton", "-", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
-         verbatimTextOutput("timeStepDisplay"),
+         selectInput("geneSelector", "", goi, selected=rownames(mtx.rna)[1],  multiple=FALSE),
+         #actionButton("forwardTimeStepButton", "+", style="margin-bottom: 20px; margin-left: 20px; font-size:200%"),
+         #actionButton("backwardTimeStepButton", "-", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
+         #verbatimTextOutput("timeStepDisplay"),
+         actionButton("clearPlotButton", "Clear", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
          #sliderInput("dayNumberSlider", label = "Day:", min = 0, max = 12, value = 0, step = 1, round=TRUE),
          width=2
          ),
@@ -52,7 +56,19 @@ server <- function(input, output) {
      reactiveState$timeStep <- reactiveState$timeStep - 1
      })
 
+  #observeEvent(input$clearPlotButton, ignoreInit=FALSE, {
+  #   printf("clear plot")
+  #   #data <- list(cmd="clearPlot")
+  #   browser()
+  #   #r2d3(data, script = "linePlot.js")
+  #   })
+
   output$d3 <- renderD3({
+     clearPlotRequested <- input$clearPlotButton
+     r2d3.command <- "plotBoth"
+     if(clearPlotRequested == 1)
+        r2d3.command <- "clearPlot"
+     print(clearPlotRequested)
      currentDay <- reactiveState$timeStep
      if(currentDay <= 0) return();
      if(currentDay > max.time.points) return();
@@ -76,8 +92,8 @@ server <- function(input, output) {
      rna.xy <- lapply(seq_len(length(timepoints)), function(i) return(list(x=timepoints[i], y=rna.values[i])))
      srm.xy <- lapply(seq_len(length(timepoints)), function(i) return(list(x=timepoints[i], y=srm.values[i])))
 
-     data <- list(rna=rna.xy, srm=srm.xy, xMax=xMax, yMax=yMax)
-     browser()
+     data <- list(rna=rna.xy, srm=srm.xy, xMax=xMax, yMax=yMax, cmd=r2d3.command)
+     # browser()
      r2d3(data, script = "linePlot.js")
     })
 }

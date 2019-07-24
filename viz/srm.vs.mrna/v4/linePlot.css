@@ -1,6 +1,12 @@
-.line{
+.line_srm{
   fill: none;
   stroke: blue;
+  stroke-width: 3;
+  }
+
+.line_rna{
+  fill: none;
+  stroke: gray;
   stroke-width: 3;
   }
   
@@ -11,6 +17,11 @@
 
 .dot {
     fill: black;
+    stroke: #fff;
+  }
+
+.dotrna {
+    fill: red;
     stroke: #fff;
   }
   
