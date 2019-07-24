@@ -3,26 +3,26 @@ library(devtools)
 library(r2d3)
 #------------------------------------------------------------------------------------------------------------------------
 load("~/github/TrenaProjectErythropoiesis/prep/import/srm-rna-averaged-final-for-paper/srm.rna.averaged.clean.RData")
-mtx.rna <- asinh(mtx.rna)
-mtx.srm <- asinh(mtx.srm)
+# mtx.rna <- asinh(mtx.rna)
+# mtx.srm <- asinh(mtx.srm)
 
 #mtx.srm <- get(load("~/github/TrenaProjectErythropoiesis/viz/srm.vs.mrna/SRMforPublication20190614.RData"))
 #mtx.rna <- get(load("~/github/TrenaProjectErythropoiesis/prep/import/rnaFromMarjorie/mtx-rna.RData"))
 max.time.points <- 13
-goi <- c("GATA1", "SPI1", head(rownames(mtx.rna)))
+goi <- c("GATA1", "SPI1", head(rownames(mtx.rna), n=20))
 #------------------------------------------------------------------------------------------------------------------------
 ui <- fluidPage(
    tags$head(tags$style("#d3{height:90vh !important;}")),
-   titlePanel("mRNA vs protein counts"),
+   titlePanel("mRNA vs srm"),
    sidebarLayout(
       sidebarPanel(
-         radioButtons("transformChoices", "Data Transform",
+         radioButtons("transformChoice", "Data Transform",
                       c("None", "Normalized", "Arcsinh")),
-         selectInput("geneSelector", "", goi, selected=rownames(mtx.rna)[1],  multiple=FALSE),
+         selectInput("geneSelector", "", goi, selected=goi[1],  multiple=FALSE),
          #actionButton("forwardTimeStepButton", "+", style="margin-bottom: 20px; margin-left: 20px; font-size:200%"),
          #actionButton("backwardTimeStepButton", "-", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
          #verbatimTextOutput("timeStepDisplay"),
-         actionButton("clearPlotButton", "Clear", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
+         #actionButton("clearPlotButton", "Clear", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
          #sliderInput("dayNumberSlider", label = "Day:", min = 0, max = 12, value = 0, step = 1, round=TRUE),
          width=2
          ),
@@ -33,6 +33,7 @@ ui <- fluidPage(
       )
    ) # fluidPage
 
+#------------------------------------------------------------------------------------------------------------------------
 server <- function(input, output) {
 
   reactiveState <- reactiveValues(timeStep=1, genes=list())
@@ -58,19 +59,9 @@ server <- function(input, output) {
      reactiveState$timeStep <- reactiveState$timeStep - 1
      })
 
-  #observeEvent(input$clearPlotButton, ignoreInit=FALSE, {
-  #   printf("clear plot")
-  #   #data <- list(cmd="clearPlot")
-  #   browser()
-  #   #r2d3(data, script = "linePlot.js")
-  #   })
-
   output$d3 <- renderD3({
-     clearPlotRequested <- input$clearPlotButton
+     transform <- input$transformChoice
      r2d3.command <- "plotBoth"
-     if(clearPlotRequested == 1)
-        r2d3.command <- "clearPlot"
-     print(clearPlotRequested)
      currentDay <- reactiveState$timeStep
      if(currentDay <= 0) return();
      if(currentDay > max.time.points) return();
@@ -78,14 +69,14 @@ server <- function(input, output) {
      xMax <- max(xValues)
      yMax <- 1.0
      tf <- input$geneSelector[1]
-     rna <- as.numeric(mtx.rna[tf, ]) # c(1,3,5,7,9,11,13,15,17,19,21,23,25)])
-     #rna <- rna/max(rna)
-     srm <- as.numeric(mtx.srm[tf,])
-     #srm <- srm/max(srm)
      timePoints <- as.numeric(sub("d_", "", colnames(mtx.rna)))
      rna.values <- as.numeric(mtx.rna[tf,])
-     printf("---- rna.values")
      srm.values <- as.numeric(mtx.srm[tf,])
+
+     vectors <- transformData(rna.values, srm.values, transform)
+     rna.values <- vectors[["rna"]]
+     srm.values <- vectors[["srm"]]
+
      xMin <- min(timePoints)
      xMax <- max(timePoints)
      yMin <- 0
@@ -98,6 +89,31 @@ server <- function(input, output) {
      # browser()
      r2d3(data, script = "linePlot.js")
     })
-}
+
+} # server
+#------------------------------------------------------------------------------------------------------------------------
+transformData <- function(rna, srm, transformName)
+{
+   printf("--- transform by %s", transformName)
+
+   if(transformName == "None"){
+      rna.out <- rna;
+      srm.out <- srm;
+      }
+
+   if(transformName == "Normalized"){
+      rna.out <- rna/max(rna)
+      srm.out <- srm/max(srm);
+      }
+
+   if(transformName == "Arcsinh"){
+      rna.out <- asinh(rna)
+      srm.out <- asinh(srm)
+      }
+
+   return(list(rna=rna.out, srm=srm.out))
+
+} # transformData
+#------------------------------------------------------------------------------------------------------------------------
 
 app <- shinyApp(ui = ui, server = server)
