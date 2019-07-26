@@ -17,7 +17,7 @@ r2d3.onRender(function(data, svg, width, height, options){
    margin = 40;
 
 
-   console.log("cmd: " + data.cmd)
+   // console.log("cmd: " + data.cmd)
    var dataset = data.srm
 
    var xScalingFunction = d3.scaleLinear()

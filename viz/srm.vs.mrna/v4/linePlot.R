@@ -9,7 +9,8 @@ load("~/github/TrenaProjectErythropoiesis/prep/import/srm-rna-averaged-final-for
 #mtx.srm <- get(load("~/github/TrenaProjectErythropoiesis/viz/srm.vs.mrna/SRMforPublication20190614.RData"))
 #mtx.rna <- get(load("~/github/TrenaProjectErythropoiesis/prep/import/rnaFromMarjorie/mtx-rna.RData"))
 max.time.points <- 13
-goi <- c("GATA1", "SPI1", head(rownames(mtx.rna), n=20))
+#goi <- c("GATA1", "SPI1", head(rownames(mtx.rna), n=20))
+goi <- rownames(mtx.rna)
 #------------------------------------------------------------------------------------------------------------------------
 ui <- fluidPage(
    tags$head(tags$style("#d3{height:90vh !important;}")),
@@ -18,7 +19,9 @@ ui <- fluidPage(
       sidebarPanel(
          radioButtons("transformChoice", "Data Transform",
                       c("None", "Normalized", "Arcsinh")),
-         selectInput("geneSelector", "", goi, selected=goi[1],  multiple=FALSE),
+         selectInput("geneSelector", "Single TF: rna + srm", goi, selected=goi[1],  multiple=FALSE),
+         #selectInput("srmSelector", "Multiple TFs: srm", goi, selected=goi[1],  multiple=TRUE),
+         #sliderInput("correlationThresholdSlider", label = "abs(pearson)", min = 0, max = 1, value = 0.9, step = 0.01),
          #actionButton("forwardTimeStepButton", "+", style="margin-bottom: 20px; margin-left: 20px; font-size:200%"),
          #actionButton("backwardTimeStepButton", "-", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
          #verbatimTextOutput("timeStepDisplay"),
@@ -69,7 +72,7 @@ server <- function(input, output) {
      xMax <- max(xValues)
      yMax <- 1.0
      tf <- input$geneSelector[1]
-     timePoints <- as.numeric(sub("d_", "", colnames(mtx.rna)))
+     timepoints <- as.numeric(sub("d_", "", colnames(mtx.rna)))
      rna.values <- as.numeric(mtx.rna[tf,])
      srm.values <- as.numeric(mtx.srm[tf,])
 
@@ -77,8 +80,8 @@ server <- function(input, output) {
      rna.values <- vectors[["rna"]]
      srm.values <- vectors[["srm"]]
 
-     xMin <- min(timePoints)
-     xMax <- max(timePoints)
+     xMin <- min(timepoints)
+     xMax <- max(timepoints)
      yMin <- 0
      yMax <- max(c(rna.values, srm.values))
 
