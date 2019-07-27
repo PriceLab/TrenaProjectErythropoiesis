@@ -13,14 +13,19 @@ max.time.points <- 13
 goi <- rownames(mtx.rna)
 #------------------------------------------------------------------------------------------------------------------------
 ui <- fluidPage(
-   tags$head(tags$style("#d3{height:90vh !important;}")),
-   titlePanel("mRNA vs srm"),
+   tags$head(
+        #tags$script(src="http://colorbrewer2.org/export/colorbrewer.js"),
+        #tags$script(src="https://d3js.org/d3-scale-chromatic.v0.4.min.js"),
+        tags$style("#d3{height:90vh !important;}")),
+   titlePanel("srm timecourses"),
    sidebarLayout(
       sidebarPanel(
          radioButtons("transformChoice", "Data Transform",
                       c("None", "Normalized", "Arcsinh")),
-         selectInput("geneSelector", "Single TF: rna + srm", goi, selected=goi[1],  multiple=FALSE),
-         #selectInput("srmSelector", "Multiple TFs: srm", goi, selected=goi[1],  multiple=TRUE),
+         #selectInput("geneSelector", "Single TF: rna + srm", goi, selected=goi[1],  multiple=FALSE),
+         selectInput("srmSelector", "Multiple TFs: srm", goi, selected=goi[1],  multiple=TRUE),
+         actionButton("plotTFsButton", "Plot", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
+
          #sliderInput("correlationThresholdSlider", label = "abs(pearson)", min = 0, max = 1, value = 0.9, step = 0.01),
          #actionButton("forwardTimeStepButton", "+", style="margin-bottom: 20px; margin-left: 20px; font-size:200%"),
          #actionButton("backwardTimeStepButton", "-", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
@@ -41,9 +46,9 @@ server <- function(input, output) {
 
   reactiveState <- reactiveValues(timeStep=1, genes=list())
 
-  observeEvent(input$geneSelector, ignoreInit=TRUE, {
-     tf <- input$geneSelector
-     printf("new tf: %s", tf)
+  observeEvent(input$srmSelector, ignoreInit=TRUE, {
+     tf <- input$srmSelector
+     printf("new tf: %s", paste(tf, collapse=","))
      })
 
   output$timeStepDisplay <- renderText({
@@ -63,7 +68,7 @@ server <- function(input, output) {
      })
 
   output$d3 <- renderD3({
-     transform <- input$transformChoice
+     transform <- isolate(input$transformChoice)
      r2d3.command <- "plotBoth"
      currentDay <- reactiveState$timeStep
      if(currentDay <= 0) return();
@@ -71,29 +76,46 @@ server <- function(input, output) {
      xValues <- as.numeric(sub("d_", "", colnames(mtx.srm)))
      xMax <- max(xValues)
      yMax <- 1.0
-     tf <- input$geneSelector[1]
-     timepoints <- as.numeric(sub("d_", "", colnames(mtx.rna)))
-     rna.values <- as.numeric(mtx.rna[tf,])
-     srm.values <- as.numeric(mtx.srm[tf,])
+     proceed <- input$plotTFsButton
+     tfs <- isolate(input$srmSelector)
+     timePoints <- as.numeric(sub("d_", "", colnames(mtx.srm)))
+     srm.vectors <- lapply(tfs, function(tf) as.numeric(mtx.srm[tf,]))
+     names(srm.vectors) <- tfs
+     # vectors <- transformData(rna.values, srm.values, transform)
+     # rna.values <- vectors[["rna"]]
+     # srm.values <- vectors[["srm"]]
 
-     vectors <- transformData(rna.values, srm.values, transform)
-     rna.values <- vectors[["rna"]]
-     srm.values <- vectors[["srm"]]
-
-     xMin <- min(timepoints)
-     xMax <- max(timepoints)
+     xMin <- min(timePoints)
+     xMax <- max(timePoints)
      yMin <- 0
-     yMax <- max(c(rna.values, srm.values))
+     yMax <- maxOfVectors(srm.vectors)
 
-     rna.xy <- lapply(seq_len(length(timepoints)), function(i) return(list(x=timepoints[i], y=rna.values[i])))
-     srm.xy <- lapply(seq_len(length(timepoints)), function(i) return(list(x=timepoints[i], y=srm.values[i])))
+     vectorsWithTimes <- vector(mode="list", length(tfs))
+     names(vectorsWithTimes) <- tfs
 
-     data <- list(rna=rna.xy, srm=srm.xy, xMax=xMax, yMax=yMax, cmd=r2d3.command)
-     # browser()
+     for(tf in tfs){
+        srm.vector <- srm.vectors[[tf]]
+        vectorsWithTimes[[tf]] <- lapply(seq_len(length(timePoints)), function(i) return(list(x=timePoints[i], y=srm.vector[i])))
+        }
+
+     data <- list(vectors=vectorsWithTimes, xMax=xMax, yMax=yMax, cmd=r2d3.command)
      r2d3(data, script = "multiPlot.js")
     })
 
 } # server
+#------------------------------------------------------------------------------------------------------------------------
+maxOfVectors <- function(vectorList)
+{
+   max <- 0
+   for(vector in vectorList){
+      vector.max <- max(vector)
+      if(vector.max > max)
+         max <- vector.max
+      } # for vector
+
+   return(max)
+
+} # maxOfVectors
 #------------------------------------------------------------------------------------------------------------------------
 transformData <- function(rna, srm, transformName)
 {
