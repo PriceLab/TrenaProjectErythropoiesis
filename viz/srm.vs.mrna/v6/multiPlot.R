@@ -21,17 +21,16 @@ ui <- fluidPage(
       sidebarPanel(
          radioButtons("transformChoice", "Data Transform",
                       c("None", "Normalized", "Arcsinh")),
-         verbatimTextOutput(outputId="currentVectorDisplay"),
          #selectInput("geneSelector", "Single TF: rna + srm", goi, selected=goi[1],  multiple=FALSE),
-         selectInput("srmSelector", "", goi, selected=goi[1],  multiple=TRUE, size=20, selectize=FALSE),
-         actionButton("plotTFsButton", "Plot", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
-
-         sliderInput("correlationThresholdSlider", label = "abs(pearson)", min = 0, max = 1, value = 0.9, step = 0.01),
-         #actionButton("forwardTimeStepButton", "+", style="margin-bottom: 20px; margin-left: 20px; font-size:200%"),
+         selectInput("srmSelector", "", goi, selected=NULL,  multiple=TRUE, size=20, selectize=FALSE),
+         sliderInput("correlationThresholdSlider", label = "Pearson", min = 0, max = 1, value = 0.9, step = 0.01),
+         actionButton("findCorrelationButton", "Find Correlated", style="margin-bottom: 20px; margin-left: 2px; font-size:100%"),
          #actionButton("backwardTimeStepButton", "-", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
          #verbatimTextOutput("timeStepDisplay"),
          #actionButton("clearPlotButton", "Clear", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
          #sliderInput("dayNumberSlider", label = "Day:", min = 0, max = 12, value = 0, step = 1, round=TRUE),
+         br(),
+         verbatimTextOutput(outputId="currentVectorDisplay"),
          width=2
          ),
       mainPanel(
@@ -42,22 +41,35 @@ ui <- fluidPage(
    ) # fluidPage
 
 #------------------------------------------------------------------------------------------------------------------------
-server <- function(input, output) {
+server <- function(session, input, output) {
 
-  reactiveState <- reactiveValues(timeStep=1, genes=list())
+   reactiveState <- reactiveValues(timeStep=1, genes=list())
 
    observeEvent(input$currentlySelectedVector, ignoreInit=FALSE, {
      newValue <- input$currentlySelectedVector
-     printf("newValue: %s", newValue)
+     # printf("newValue: %s", newValue)
      if(nchar(newValue) == 0)
         newValue <- "   "
      output$currentVectorDisplay <- renderText({newValue})
      #output$currentVectorDisplay <- renderText({newValue})
      })
 
+  observeEvent(input$transformChoice, ignoreInit=TRUE, {
+     tfs <- input$srmSelector
+     currentDay <- reactiveState$timeStep
+     transform <- input$transformChoice
+     output$d3 <- renderD3({
+       plotTFs(tfs, input, output, transform)
+       })
+     })
+
   observeEvent(input$srmSelector, ignoreInit=TRUE, {
-     tf <- input$srmSelector
-     printf("new tf: %s", paste(tf, collapse=","))
+     tfs <- input$srmSelector
+     currentDay <- reactiveState$timeStep
+     transform <- input$transformChoice
+     output$d3 <- renderD3({
+       plotTFs(tfs, input, output, transform)
+       })
      })
 
   output$timeStepDisplay <- renderText({
@@ -76,42 +88,89 @@ server <- function(input, output) {
      reactiveState$timeStep <- reactiveState$timeStep - 1
      })
 
-  output$d3 <- renderD3({
-     transform <- isolate(input$transformChoice)
-     r2d3.command <- "plotBoth"
-     currentDay <- reactiveState$timeStep
-     if(currentDay <= 0) return();
-     if(currentDay > max.time.points) return();
-     xValues <- as.numeric(sub("d_", "", colnames(mtx.srm)))
-     xMax <- max(xValues)
-     yMax <- 1.0
-     proceed <- input$plotTFsButton
+   observeEvent(input$findCorrelationButton, ignoreInit=TRUE,{
      tfs <- isolate(input$srmSelector)
-     timePoints <- as.numeric(sub("d_", "", colnames(mtx.srm)))
-     srm.vectors <- lapply(tfs, function(tf) as.numeric(mtx.srm[tf,]))
-     names(srm.vectors) <- tfs
-     # vectors <- transformData(rna.values, srm.values, transform)
-     # rna.values <- vectors[["rna"]]
-     # srm.values <- vectors[["srm"]]
+     threshold <- isolate(input$correlationThresholdSlider)
+     tfs.correlated <- findCorrelated(tfs[1], threshold)
+     updateSelectInput(session, "srmSelector", selected=tfs.correlated)
+     })
 
-     xMin <- min(timePoints)
-     xMax <- max(timePoints)
-     yMin <- 0
-     yMax <- maxOfVectors(srm.vectors)
-
-     vectorsWithTimes <- vector(mode="list", length(tfs))
-     names(vectorsWithTimes) <- tfs
-
-     for(tf in tfs){
-        srm.vector <- srm.vectors[[tf]]
-        vectorsWithTimes[[tf]] <- lapply(seq_len(length(timePoints)), function(i) return(list(x=timePoints[i], y=srm.vector[i])))
-        }
-
-     data <- list(vectors=vectorsWithTimes, xMax=xMax, yMax=yMax, cmd=r2d3.command)
-     r2d3(data, script = "multiPlot.js")
-    })
+  #  output$d3 <- renderD3({
+  #     transform <- isolate(input$transformChoice)
+  #     r2d3.command <- "plotBoth"
+  #     currentDay <- reactiveState$timeStep
+  #     if(currentDay <= 0) return();
+  #     if(currentDay > max.time.points) return();
+  #     xValues <- as.numeric(sub("d_", "", colnames(mtx.srm)))
+  #     xMax <- max(xValues)
+  #     yMax <- 1.0
+  #     proceed <- input$plotTFsButton
+  #     tfs <- isolate(input$srmSelector)
+  #     timePoints <- as.numeric(sub("d_", "", colnames(mtx.srm)))
+  #     srm.vectors <- lapply(tfs, function(tf) as.numeric(mtx.srm[tf,]))
+  #     names(srm.vectors) <- tfs
+  #     # vectors <- transformData(rna.values, srm.values, transform)
+  #     # rna.values <- vectors[["rna"]]
+  #     # srm.values <- vectors[["srm"]]
+  #
+  #     xMin <- min(timePoints)
+  #     xMax <- max(timePoints)
+  #     yMin <- 0
+  #     yMax <- maxOfVectors(srm.vectors)
+  #
+  #     vectorsWithTimes <- vector(mode="list", length(tfs))
+  #     names(vectorsWithTimes) <- tfs
+  #
+  #     for(tf in tfs){
+  #        srm.vector <- srm.vectors[[tf]]
+  #        vectorsWithTimes[[tf]] <- lapply(seq_len(length(timePoints)), function(i) return(list(x=timePoints[i], y=srm.vector[i])))
+  #        }
+  #
+  #     data <- list(vectors=vectorsWithTimes, xMax=xMax, yMax=yMax, cmd=r2d3.command)
+  #     r2d3(data, script = "multiPlot.js")
+  #    })
 
 } # server
+#------------------------------------------------------------------------------------------------------------------------
+findCorrelated <- function(targetTF, threshold)
+{
+   #browser()
+   #xzy <- 59
+   correlations <- apply(mtx.srm, 1, function(row) cor(mtx.srm[targetTF,], row))
+   return(names(which(correlations > threshold)))
+
+} # findCorrelated
+#------------------------------------------------------------------------------------------------------------------------
+plotTFs <- function(tfs, input, output, transform)
+{
+   timePoints <- as.numeric(sub("d_", "", colnames(mtx.srm)))
+   srm.vectors <- lapply(tfs, function(tf) as.numeric(mtx.srm[tf,]))
+   names(srm.vectors) <- tfs
+
+   srm.vectors <- transformData(srm.vectors, transform)
+
+   xMin <- min(timePoints)
+   xMax <- max(timePoints)
+   yMin <- 0
+   yMax <- maxOfVectors(srm.vectors)
+
+   vectorsWithTimes <- vector(mode="list", length(tfs))
+   names(vectorsWithTimes) <- tfs
+
+   for(tf in tfs){
+      srm.vector <- srm.vectors[[tf]]
+      vectorsWithTimes[[tf]] <- lapply(seq_len(length(timePoints)), function(i) return(list(x=timePoints[i], y=srm.vector[i])))
+      }
+
+   #browser()
+
+   data <- list(vectors=vectorsWithTimes, xMax=xMax, yMax=yMax, cmd="plot")
+
+   #printf("calling r2d3")
+   #print(data)
+   r2d3(data, script = "multiPlot.js")
+
+} # plotTFs
 #------------------------------------------------------------------------------------------------------------------------
 maxOfVectors <- function(vectorList)
 {
@@ -127,28 +186,24 @@ maxOfVectors <- function(vectorList)
 
 } # maxOfVectors
 #------------------------------------------------------------------------------------------------------------------------
-transformData <- function(rna, srm, transformName)
+transformData <- function(srm, transformName)
 {
-   printf("--- transform by %s", transformName)
+   # printf("--- transform by %s", transformName)
 
    if(transformName == "None"){
-      rna.out <- rna;
       srm.out <- srm;
       }
 
    if(transformName == "Normalized"){
-      rna.out <- rna/max(rna)
-      srm.out <- srm/max(srm);
+      srm.out <- lapply(srm, function(vec) vec/max(vec))
       }
 
    if(transformName == "Arcsinh"){
-      rna.out <- asinh(rna)
-      srm.out <- asinh(srm)
+      srm.out <- lapply(srm, asinh)
       }
 
-   return(list(rna=rna.out, srm=srm.out))
+   return(srm.out)
 
 } # transformData
 #------------------------------------------------------------------------------------------------------------------------
-
 app <- shinyApp(ui = ui, server = server)

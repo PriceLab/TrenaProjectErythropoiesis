@@ -1,12 +1,13 @@
 //------------------------------------------------------------------------------------------------------------------------
 r2d3.onRender(function(data, svg, width, height, options){
 
+   // console.log("--- r2d3.onRender")
    r2d3.svg.selectAll("g").remove()
 
-    var text = r2d3.svg.selectAll("text")
-                       .data("placeholder")
-                       .enter()
-                       .append("text");
+   var text = r2d3.svg.selectAll("text")
+                      .data("placeholder")
+                      .enter()
+                      .append("text");
 
    rnaData = data.rna
    srmData = data.srm
@@ -36,8 +37,9 @@ r2d3.onRender(function(data, svg, width, height, options){
    var lineGenerator = d3.line()
        .x(function(d, i) {return xScalingFunction(d.x);})
        .y(function(d)    {return yScalingFunction(d.y);})
-       .curve(d3.curveCardinal)
-       //.curve(d3.curveLinear) // apply smoothing to the line
+       //.curve(d3.curveCardinal)
+       .curve(d3.curveMonotoneX)
+       //.curve(d3.curveLinear)
 
    var xAxis = d3.axisBottom()
        .scale(xScalingFunction);
@@ -88,7 +90,7 @@ r2d3.onRender(function(data, svg, width, height, options){
     
     for(vectorName of vectorNames){
        colorNumber = colorNumber + 1
-       console.log("adding " + vectorName);
+       // console.log("adding " + vectorName);
        var oneDataset = data.vectors[vectorName];
 
        plottingSurface.append("path")
@@ -99,7 +101,7 @@ r2d3.onRender(function(data, svg, width, height, options){
          .attr("vName", vectorName)
          .attr("stroke", colors[(colorNumber % colorCount) - 1])
          .on("mouseover", function(d, i){
-             console.log("mouse over: " + d3.select(this).attr("vName"));
+             // console.log("mouse over: " + d3.select(this).attr("vName"));
              d3.select(this).attr('stroke-width', 10);
              Shiny.setInputValue("currentlySelectedVector", d3.select(this).attr("vName"));
              })
@@ -115,7 +117,7 @@ r2d3.onRender(function(data, svg, width, height, options){
            .attr("class", "dot") // Assign a class for styling
            .attr("cx", function(d) {return xScalingFunction(d.x)})
            .attr("cy", function(d) {return yScalingFunction(d.y)})
-           .attr("r", 10)
+           .attr("r", 5)
         
            //.on("mouseover", function(d,i) {
            //   console.log("mouse!");
