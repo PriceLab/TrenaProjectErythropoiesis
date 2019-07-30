@@ -1,5 +1,4 @@
 library(shiny)
-library(devtools)
 library(r2d3)
 #------------------------------------------------------------------------------------------------------------------------
 load("~/github/TrenaProjectErythropoiesis/prep/import/srm-rna-averaged-final-for-paper/srm.rna.averaged.clean.RData")
@@ -24,7 +23,8 @@ ui <- fluidPage(
          #selectInput("geneSelector", "Single TF: rna + srm", goi, selected=goi[1],  multiple=FALSE),
          selectInput("srmSelector", "", goi, selected=NULL,  multiple=TRUE, size=20, selectize=FALSE),
          sliderInput("correlationThresholdSlider", label = "Pearson", min = 0, max = 1, value = 0.9, step = 0.01),
-         actionButton("findCorrelationButton", "Find Correlated", style="margin-bottom: 20px; margin-left: 2px; font-size:100%"),
+         actionButton("findPositiveCorrelationsButton", "Find Correlated +", style="margin-bottom: 20px; margin-left: 2px; font-size:100%"),
+         actionButton("findNegativeCorrelationsButton", "Find Correlated -", style="margin-bottom: 20px; margin-left: 2px; font-size:100%"),
          #actionButton("backwardTimeStepButton", "-", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
          #verbatimTextOutput("timeStepDisplay"),
          #actionButton("clearPlotButton", "Clear", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
@@ -88,10 +88,17 @@ server <- function(session, input, output) {
      reactiveState$timeStep <- reactiveState$timeStep - 1
      })
 
-   observeEvent(input$findCorrelationButton, ignoreInit=TRUE,{
+   observeEvent(input$findPositiveCorrelationsButton, ignoreInit=TRUE,{
      tfs <- isolate(input$srmSelector)
      threshold <- isolate(input$correlationThresholdSlider)
      tfs.correlated <- findCorrelated(tfs[1], threshold)
+     updateSelectInput(session, "srmSelector", selected=tfs.correlated)
+     })
+
+   observeEvent(input$findNegativeCorrelationsButton, ignoreInit=TRUE,{
+     tfs <- isolate(input$srmSelector)
+     threshold <- isolate(input$correlationThresholdSlider)
+     tfs.correlated <- findCorrelated(tfs[1], threshold, negative=TRUE)
      updateSelectInput(session, "srmSelector", selected=tfs.correlated)
      })
 
@@ -132,12 +139,17 @@ server <- function(session, input, output) {
 
 } # server
 #------------------------------------------------------------------------------------------------------------------------
-findCorrelated <- function(targetTF, threshold)
+findCorrelated <- function(targetTF, threshold, negative=FALSE)
 {
-   #browser()
-   #xzy <- 59
    correlations <- apply(mtx.srm, 1, function(row) cor(mtx.srm[targetTF,], row))
-   return(names(which(correlations > threshold)))
+   # browser()
+
+   if(negative)
+      result <- names(which(correlations <= (-1 * threshold)))
+   else
+      result <- names(which(correlations >= threshold))
+
+   return(unique(c(targetTF, result)))
 
 } # findCorrelated
 #------------------------------------------------------------------------------------------------------------------------
