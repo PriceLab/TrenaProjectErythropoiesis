@@ -1,4 +1,5 @@
 library(shiny)
+library(shinyjs)
 library(r2d3)
 #------------------------------------------------------------------------------------------------------------------------
 printf <- function(...) print(noquote(sprintf(...)))
@@ -29,12 +30,11 @@ srm.coexpression.tab <- function()
 {
    sidebarLayout(
       sidebarPanel(
-         radioButtons("srm.transformChoice", "Data Transform",
-                      c("None", "Normalized", "Arcsinh")),
-         selectInput("srmSelector", "", goi, selected=NULL,  multiple=TRUE, size=20, selectize=FALSE),
+         radioButtons("srm.transformChoice", "Data Transform", c("None", "Normalized")), # , "Arcsinh")),
+         radioButtons("srm.lineTypeSelector", "Smoothing", c("No", "Yes")),
+         selectInput("srmSelector", "", goi, selected=NULL,  multiple=FALSE, size=20, selectize=FALSE),
          sliderInput("correlationThresholdSlider", label = "Pearson", min = 0, max = 1, value = 0.9, step = 0.01),
-         actionButton("findPositiveCorrelationsButton", "Find Correlated +", style="margin-bottom: 20px; margin-left: 2px; font-size:100%"),
-         actionButton("findNegativeCorrelationsButton", "Find Correlated -", style="margin-bottom: 20px; margin-left: 2px; font-size:100%"),
+         radioButtons("correlationDirectionChooser", "Find Correlations", c("None", "+", "-")),
          br(),
          verbatimTextOutput(outputId="currentVectorDisplay"),
          width=2
@@ -49,8 +49,12 @@ srm.coexpression.tab <- function()
 #------------------------------------------------------------------------------------------------------------------------
 ui <- fluidPage(
 
-   tags$head(tags$style(".tab-pane {margin-top: 20px;}")),
+   tags$head(
+        tags$style(".tab-pane {margin-top: 20px;}"),
+        tags$link(rel = "stylesheet", type = "text/css", href = "app.css")
+        ),
 
+   useShinyjs(),
    titlePanel("SRM and RNA-seq in erythropoiesis"),
 
    tabsetPanel(
@@ -63,36 +67,50 @@ ui <- fluidPage(
 #------------------------------------------------------------------------------------------------------------------------
 server <- function(input, output, session) {
 
-  reactiveState <- reactiveValues(timeStep=1, genes=list())
+   reactiveState <- reactiveValues(selectedTF=NULL, correlatedTFs=list())
 
-  observeEvent(input$geneSelector, ignoreInit=TRUE, {
-     tf <- input$geneSelector
-     printf("new tf: %s", tf)
-     })
-
-  output$timeStepDisplay <- renderText({
-      reactiveState$timeStep
+   observeEvent(input$srmSelector, ignoreInit=TRUE, {
+      plotCorrelatedProteins(input, output)
       })
 
-  observeEvent(input$forwardTimeStepButton, ignoreInit=FALSE, {
-     currentValue <- reactiveState$timeStep
-     if(currentValue == max.time.points) return()
-     reactiveState$timeStep <- reactiveState$timeStep + 1
+   observeEvent(input$geneSelector, ignoreInit=TRUE, {
+      tf <- input$geneSelector
+      })
+
+   observeEvent(input$srm.transformChoice, ignoreInit=TRUE, {
+     plotCorrelatedProteins(input, output)
      })
 
-  observeEvent(input$backwardTimeStepButton, ignoreInit=FALSE, {
-     currentValue <- reactiveState$timeStep
-     if(currentValue == 1) return()
-     reactiveState$timeStep <- reactiveState$timeStep - 1
-     })
+   observeEvent(input$correlationThresholdSlider, ignoreInit=TRUE, {
+      plotCorrelatedProteins(input, output)
+      })
+
+   observeEvent(input$correlationDirectionChooser, ignoreInit=TRUE, {
+      plotCorrelatedProteins(input, output)
+      })
+
+
+
+  # output$timeStepDisplay <- renderText({
+  #     reactiveState$timeStep
+  #     })
+#
+#   observeEvent(input$forwardTimeStepButton, ignoreInit=FALSE, {
+#      currentValue <- reactiveState$timeStep
+#      if(currentValue == max.time.points) return()
+#      reactiveState$timeStep <- reactiveState$timeStep + 1
+#      })
+#
+#   observeEvent(input$backwardTimeStepButton, ignoreInit=FALSE, {
+#      currentValue <- reactiveState$timeStep
+#      if(currentValue == 1) return()
+#      reactiveState$timeStep <- reactiveState$timeStep - 1
+#      })
 
   output$srm.rna.d3 <- renderD3({
      #transform <- input$srm.rna.transformChoice
      lineSmoothing <- input$srm.rna.lineTypeSelector
      r2d3.command <- "plotBoth"
-     currentDay <- reactiveState$timeStep
-     if(currentDay <= 0) return();
-     if(currentDay > max.time.points) return();
      xValues <- as.numeric(sub("d_", "", colnames(mtx.srm)))
      xMax <- max(xValues)
      yMax <- 1.0
@@ -119,9 +137,6 @@ server <- function(input, output, session) {
      r2d3(data, script = "linePlot.js")
      })
 
-
-   reactiveState <- reactiveValues(timeStep=1, genes=list())
-
    observeEvent(input$currentlySelectedVector, ignoreInit=FALSE, {
      newValue <- input$currentlySelectedVector
      # printf("newValue: %s", newValue)
@@ -131,62 +146,74 @@ server <- function(input, output, session) {
      #output$currentVectorDisplay <- renderText({newValue})
      })
 
-  observeEvent(input$srm.transformChoice, ignoreInit=TRUE, {
-     tfs <- input$srmSelector
-     currentDay <- reactiveState$timeStep
-     transform <- input$srm.transformChoice
-     output$srm.d3 <- renderD3({
-       plotTFs(tfs, input, output, transform)
-       })
-     })
-
-  observeEvent(input$srmSelector, ignoreInit=TRUE, {
-     tfs <- input$srmSelector
-     currentDay <- reactiveState$timeStep
-     transform <- input$srm.transformChoice
-     output$srm.d3 <- renderD3({
-       plotTFs(tfs, input, output, transform)
-       })
-     })
-
-  output$timeStepDisplay <- renderText({
-      reactiveState$timeStep
-      })
-
-  observeEvent(input$forwardTimeStepButton, ignoreInit=FALSE, {
-     currentValue <- reactiveState$timeStep
-     if(currentValue == max.time.points) return()
-     reactiveState$timeStep <- reactiveState$timeStep + 1
-     })
-
-  observeEvent(input$backwardTimeStepButton, ignoreInit=FALSE, {
-     currentValue <- reactiveState$timeStep
-     if(currentValue == 1) return()
-     reactiveState$timeStep <- reactiveState$timeStep - 1
-     })
-
-   observeEvent(input$findPositiveCorrelationsButton, ignoreInit=TRUE,{
-     tfs <- isolate(input$srmSelector)
-     threshold <- isolate(input$correlationThresholdSlider)
-     tfs.correlated <- findCorrelated(tfs[1], threshold)
-     updateSelectInput(session, "srmSelector", selected=tfs.correlated)
-     })
-
-   observeEvent(input$findNegativeCorrelationsButton, ignoreInit=TRUE,{
-     tfs <- isolate(input$srmSelector)
-     threshold <- isolate(input$correlationThresholdSlider)
-     tfs.correlated <- findCorrelated(tfs[1], threshold, negative=TRUE)
-     updateSelectInput(session, "srmSelector", selected=tfs.correlated)
-     })
+  #observeEvent(input$correlationDirectionChooser, ignoreInit=TRUE, {
+  #   correlationDirection <- input$correlationDirectionChooser;
+  #   reactiveState$correlationDirection <- correlationDirection
+  #   })
 
 
+#  observeEvent(input$srmSelector, ignoreInit=TRUE, {
+#     plotCorrelatedProteins(input, output)
+     #tf <- input$srmSelector
+#     printf("tf count: %d", length(tf))
+#     if(length(tf) == 1){
+#        shinyjs::enable("findPositiveCorrelationsButton")
+#        shinyjs::enable("findNegativeCorrelationsButton")
+#        }
+#     reactiveState$selectedTF <- tf
+#     transform <- input$srm.transformChoice
+#     correlationDirectionChoice <- input$correlationDirectionChooser;
+#     threshold <- input$correlationThresholdSlider;
+#     tfs.correlated <- c()
+#     if(correlationDirectionChoice == "+"){
+#         tfs.correlated <- findCorrelated(tf, threshold, negative=FALSE)
+#         }
+#     if(correlationDirectionChoice == "-"){
+#         tfs.correlated <- findCorrelated(tf, threshold, negative=TRUE)
+#         }
+#     printf("correlated tfs: %d", length(tfs.correlated))
+#     tfs.all <- c(tf, tfs.correlated)
+#     output$srm.d3 <- renderD3({
+#       plotTFs(tfs.all, input, output, transform)
+#       })
+#     })
+
+#  output$timeStepDisplay <- renderText({
+#      reactiveState$timeStep
+#      })
+#
+  #observeEvent(input$forwardTimeStepButton, ignoreInit=FALSE, {
+#     currentValue <- reactiveState$timeStep
+#     if(currentValue == max.time.points) return()
+#     reactiveState$timeStep <- reactiveState$timeStep + 1
+#     })
+#
+#  observeEvent(input$backwardTimeStepButton, ignoreInit=FALSE, {
+#     currentValue <- reactiveState$timeStep
+#     if(currentValue == 1) return()
+#     reactiveState$timeStep <- reactiveState$timeStep - 1
+#     })
+#
+#   observeEvent(input$findPositiveCorrelationsButton, ignoreInit=TRUE,{
+#     tfs <- isolate(input$srmSelector)
+#     threshold <- isolate(input$correlationThresholdSlider)
+#     tfs.correlated <- findCorrelated(tfs[1], threshold)
+#     #updateSelectInput(session, "srmSelector", selected=tfs.correlated)
+#     })
+#
+#   observeEvent(input$findNegativeCorrelationsButton, ignoreInit=TRUE,{
+#     tfs <- isolate(input$srmSelector)
+#     threshold <- isolate(input$correlationThresholdSlider)
+#     tfs.correlated <- findCorrelated(tfs[1], threshold, negative=TRUE)
+#     #updateSelectInput(session, "srmSelector", selected=tfs.correlated)
+#     })
 
 
 } # server
 #------------------------------------------------------------------------------------------------------------------------
 transformData.rna.srm <- function(rna, srm, transformName)
 {
-   printf("--- transform by %s", transformName)
+   # printf("--- transform by %s", transformName)
 
    if(transformName == "None"){
       rna.out <- rna;
@@ -207,7 +234,24 @@ transformData.rna.srm <- function(rna, srm, transformName)
 
 } # transformData.rna.srm
 #------------------------------------------------------------------------------------------------------------------------
-findCorrelated <- function(targetTF, threshold, negative=FALSE)
+findCorrelated <- function(targetTF, threshold, direction)
+{
+   if(direction == "None")
+      return(targetTF)
+
+   correlations <- apply(mtx.srm, 1, function(row) cor(mtx.srm[targetTF,], row))
+   # browser()
+
+   if(direction == "-")
+      result <- names(which(correlations <= (-1 * threshold)))
+   else  # must be "+"
+      result <- names(which(correlations >= threshold))
+
+   return(unique(c(targetTF, result)))
+
+} # findCorrelated
+#------------------------------------------------------------------------------------------------------------------------
+old.findCorrelated <- function(targetTF, threshold, negative=FALSE)
 {
    correlations <- apply(mtx.srm, 1, function(row) cor(mtx.srm[targetTF,], row))
    # browser()
@@ -219,11 +263,25 @@ findCorrelated <- function(targetTF, threshold, negative=FALSE)
 
    return(unique(c(targetTF, result)))
 
-} # findCorrelated
+} # old.findCorrelated
+#------------------------------------------------------------------------------------------------------------------------
+plotCorrelatedProteins <- function(input, output)
+{
+   tf <- input$srmSelector
+   correlationThreshold <- input$correlationThresholdSlider;
+   correlationDirection <- isolate(input$correlationDirectionChooser)
+   tfs.all <- findCorrelated(tf, correlationThreshold, correlationDirection)
+   transform <- input$srm.transformChoice
+
+   output$srm.d3 <- renderD3({
+     plotTFs(tfs.all, input, output, transform)
+     })
+
+} # plotCorrelatedProteins
 #------------------------------------------------------------------------------------------------------------------------
 plotTFs <- function(tfs, input, output, transform)
 {
-   printf("plotTFs (%s): %s", transform, paste(tfs, collapse=", "))
+   #printf("plotTFs (%s): %s", transform, paste(tfs, collapse=", "))
 
    timePoints <- as.numeric(sub("d_", "", colnames(mtx.srm)))
    srm.vectors <- lapply(tfs, function(tf) as.numeric(mtx.srm[tf,]))
@@ -244,7 +302,9 @@ plotTFs <- function(tfs, input, output, transform)
       vectorsWithTimes[[tf]] <- lapply(seq_len(length(timePoints)), function(i) return(list(x=timePoints[i], y=srm.vector[i])))
       }
 
-   data <- list(vectors=vectorsWithTimes, xMax=xMax, yMax=yMax, cmd="plot")
+   lineSmoothing <- input$srm.lineTypeSelector
+
+   data <- list(vectors=vectorsWithTimes, xMax=xMax, yMax=yMax, cmd="plot", smoothing=lineSmoothing)
 
    r2d3(data, script = "multiPlot.js")
 

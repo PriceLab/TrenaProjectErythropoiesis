@@ -13,6 +13,10 @@ r2d3.onRender(function(data, svg, width, height, options){
    srmData = data.srm
    xMax = data.xMax
    yMax = data.yMax
+
+   var lineDrawingScheme = d3.curveLinear;
+   if(data.smoothing=="Yes")
+       lineDrawingScheme = d3.curveMonotoneX
   
    var d3Div = document.getElementById("srm.d3");
    var actual_width = d3Div.clientWidth;
@@ -25,19 +29,17 @@ r2d3.onRender(function(data, svg, width, height, options){
    var vectorNames = Object.keys(data.vectors)
 
    var xScalingFunction = d3.scaleLinear()
-       .domain([0, xMax * 1.1])  // the range of the values to plot
+       .domain([0, xMax * 1.01])  // the range of the values to plot
        .range([0, width]);             // the pixel range of the x-axis
     
    var yScalingFunction = d3.scaleLinear()
-       .domain([0, yMax * 1.1])
+       .domain([0, yMax * 1.01])
        .range([height, 0]);
     
    var lineGenerator = d3.line()
        .x(function(d, i) {return xScalingFunction(d.x);})
        .y(function(d)    {return yScalingFunction(d.y);})
-       //.curve(d3.curveCardinal)
-       .curve(d3.curveMonotoneX)
-       //.curve(d3.curveLinear)
+       .curve(lineDrawingScheme)
 
    var xAxis = d3.axisBottom()
        .scale(xScalingFunction);

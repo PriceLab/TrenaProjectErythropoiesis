@@ -16,7 +16,7 @@ r2d3.onRender(function(data, svg, width, height, options){
    var actual_width = d3Div.clientWidth;
    var actual_height = d3Div.clientHeight;
   
-   sideMargin = 150; // 40;
+   sideMargin = 170; // 40;
    bottomMargin = 50;
    topMargin = 20;
 
@@ -24,8 +24,8 @@ r2d3.onRender(function(data, svg, width, height, options){
    height = actual_height - (1 * (bottomMargin + topMargin)); //* 0.90;
 
    var dataset = data.srm
-   var lineDrawingScheme = d3.curveLinear;
 
+   var lineDrawingScheme = d3.curveLinear;
    if(data.smoothing=="Yes")
        lineDrawingScheme = d3.curveMonotoneX
 
@@ -101,25 +101,49 @@ r2d3.onRender(function(data, svg, width, height, options){
     //------------------------------
     // axis labels
     //------------------------------
-    let xPos = 30;
+    let fontWeight = 400;
+    let xPos = 45;
     let yPos = height/2;
     translationString = `translate(${xPos}, ${yPos})`
     r2d3.svg.append("text")             
       .style("font-size", 14)
+      .style("font-weight", fontWeight)
       .attr("transform", translationString)
       .style("text-anchor", "middle")
       .style("stroke", "blue")
       .text("PROTEIN");
+
+    yPos = 20 + height/2;
+    translationString = `translate(${xPos}, ${yPos})`
+    r2d3.svg.append("text")             
+      .style("font-size", 12)
+      .style("font-weight", fontWeight)
+      .attr("transform", translationString)
+      .style("text-anchor", "middle")
+      .style("stroke", "blue")
+      .text("copy number");
 
     xPos = width + (1.5 * sideMargin);
     yPos = height/2;
     translationString = `translate(${xPos}, ${yPos})`
     r2d3.svg.append("text")             
       .style("font-size", 14)
+      .style("font-weight", fontWeight)
       .attr("transform", translationString)
       .style("text-anchor", "middle")
       .style("stroke", "red")
       .text("RNA");
+
+    xPos = width + (1.5 * sideMargin);
+    yPos = 20 + height/2;
+    translationString = `translate(${xPos}, ${yPos})`
+    r2d3.svg.append("text")             
+      .style("font-size", 12)
+      .style("font-weight", fontWeight)
+      .attr("transform", translationString)
+      .style("text-anchor", "middle")
+      .style("stroke", "red")
+      .text("FPKM");
 
     
     xPos = (width/2) + sideMargin;
