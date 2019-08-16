@@ -11,13 +11,10 @@ srm.rna.tab <- function()
 {
    sidebarLayout(
       sidebarPanel(
-         radioButtons("srm.rna.transformChoice", "Data Transform",
-                      c("None", "Normalized", "Arcsinh")),
-         selectInput("geneSelector", "Single TF", goi, selected=goi[1],  multiple=FALSE),
-         span(style="color:red", "RNA"),
-         span(" + "),
-         span(style="color:blue", "SRM"),
-
+         #radioButtons("srm.rna.transformChoice", "Data Transform",
+         #             c("None", "Normalized", "Arcsinh")),
+         selectInput("geneSelector", "Plot Protein and mRNA", goi, selected=goi[1],  multiple=FALSE),
+         radioButtons("srm.rna.lineTypeSelector", "Smoothing", c("No", "Yes")),
          width=2
          ),
       mainPanel(
@@ -90,7 +87,8 @@ server <- function(input, output, session) {
      })
 
   output$srm.rna.d3 <- renderD3({
-     transform <- input$srm.rna.transformChoice
+     #transform <- input$srm.rna.transformChoice
+     lineSmoothing <- input$srm.rna.lineTypeSelector
      r2d3.command <- "plotBoth"
      currentDay <- reactiveState$timeStep
      if(currentDay <= 0) return();
@@ -103,7 +101,7 @@ server <- function(input, output, session) {
      rna.values <- as.numeric(mtx.rna[tf,])
      srm.values <- as.numeric(mtx.srm[tf,])
 
-     vectors <- transformData.rna.srm(rna.values, srm.values, transform)
+     vectors <- transformData.rna.srm(rna.values, srm.values, transformName="None")
      rna.values <- vectors[["rna"]]
      srm.values <- vectors[["srm"]]
 
@@ -116,7 +114,7 @@ server <- function(input, output, session) {
      rna.xy <- lapply(seq_len(length(timepoints)), function(i) return(list(x=timepoints[i], y=rna.values[i])))
      srm.xy <- lapply(seq_len(length(timepoints)), function(i) return(list(x=timepoints[i], y=srm.values[i])))
 
-     data <- list(rna=rna.xy, srm=srm.xy, xMax=xMax, yMax=yMax, y2Max=y2Max, cmd=r2d3.command)
+     data <- list(rna=rna.xy, srm=srm.xy, xMax=xMax, yMax=yMax, y2Max=y2Max, cmd=r2d3.command, smoothing=lineSmoothing)
      # browser()
      r2d3(data, script = "linePlot.js")
      })

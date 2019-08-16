@@ -10,7 +10,8 @@ r2d3.onRender(function(data, svg, width, height, options){
    xMax = data.xMax
    yMax = data.yMax
    y2Max = data.y2Max
-  
+   smoothing = data.moothing
+
    var d3Div = document.getElementById("srm.rna.d3");
    var actual_width = d3Div.clientWidth;
    var actual_height = d3Div.clientHeight;
@@ -19,13 +20,14 @@ r2d3.onRender(function(data, svg, width, height, options){
    bottomMargin = 50;
    topMargin = 20;
 
-   //width = actual_width * 0.80; // 0.95
    width = actual_width - (2 * sideMargin);
    height = actual_height - (1 * (bottomMargin + topMargin)); //* 0.90;
-   //height = actual_height * 0.90;
 
-   // console.log("cmd: " + data.cmd)
    var dataset = data.srm
+   var lineDrawingScheme = d3.curveLinear;
+
+   if(data.smoothing=="Yes")
+       lineDrawingScheme = d3.curveMonotoneX
 
    var xScalingFunction = d3.scaleLinear()
        .domain([0, xMax * 1.0])  // the range of the values to plot
@@ -43,13 +45,14 @@ r2d3.onRender(function(data, svg, width, height, options){
        .x(function(d, i) { return xScalingFunction(d.x); }) // set the x values for the line generator
        .y(function(d) { return yScalingFunction(d.y); }) // set the y values for the line generator 
        //.curve(d3.curveMonotoneX)
-       .curve(d3.curveLinear) // apply smoothing to the line
+       //.curve(d3.curveLinear) // apply smoothing to the line
+       .curve(lineDrawingScheme)
 
    var lineFunction2 = d3.line()
        .x(function(d, i) { return xScalingFunction(d.x); }) // set the x values for the line generator
        .y(function(d) { return y2ScalingFunction(d.y); }) // set the y values for the line generator 
        //.curve(d3.curveMonotoneX)
-       .curve(d3.curveLinear) // apply smoothing to the line
+       .curve(lineDrawingScheme)
 
    var xAxis = d3.axisBottom()
        .scale(xScalingFunction);
@@ -106,7 +109,7 @@ r2d3.onRender(function(data, svg, width, height, options){
       .attr("transform", translationString)
       .style("text-anchor", "middle")
       .style("stroke", "blue")
-      .text("Protein");
+      .text("PROTEIN");
 
     xPos = width + (1.5 * sideMargin);
     yPos = height/2;
@@ -120,7 +123,7 @@ r2d3.onRender(function(data, svg, width, height, options){
 
     
     xPos = (width/2) + sideMargin;
-    yPos = height + (bottomMargin);
+    yPos = height + (0.8 * bottomMargin);
     translationString = `translate(${xPos}, ${yPos})`
     r2d3.svg.append("text")             
       .style("font-size", 18)
