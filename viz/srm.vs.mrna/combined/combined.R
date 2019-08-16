@@ -111,11 +111,12 @@ server <- function(input, output, session) {
      xMax <- max(timepoints)
      yMin <- 0
      yMax <- max(c(rna.values, srm.values))
+     y2Max <- max(rna.values)
 
      rna.xy <- lapply(seq_len(length(timepoints)), function(i) return(list(x=timepoints[i], y=rna.values[i])))
      srm.xy <- lapply(seq_len(length(timepoints)), function(i) return(list(x=timepoints[i], y=srm.values[i])))
 
-     data <- list(rna=rna.xy, srm=srm.xy, xMax=xMax, yMax=yMax, cmd=r2d3.command)
+     data <- list(rna=rna.xy, srm=srm.xy, xMax=xMax, yMax=yMax, y2Max=y2Max, cmd=r2d3.command)
      # browser()
      r2d3(data, script = "linePlot.js")
      })

@@ -22,8 +22,6 @@ r2d3.onRender(function(data, svg, width, height, options){
    height = actual_height * 0.95;
    margin = 40;
 
-
-   // console.log("cmd: " + data.cmd)
    var vectorNames = Object.keys(data.vectors)
 
    var xScalingFunction = d3.scaleLinear()
