@@ -22,9 +22,16 @@ r2d3.onRender(function(data, svg, width, height, options){
    var actual_width = d3Div.clientWidth;
    var actual_height = d3Div.clientHeight;
   
-   width = actual_width * 0.95;
-   height = actual_height * 0.95;
-   margin = 40;
+   var sideMargin = 170;
+   var bottomMargin = 50;
+   var topMargin = 20;
+
+    var width = actual_width - (2 * sideMargin);
+    var height = actual_height - (1 * (bottomMargin + topMargin)); //* 0.90;
+
+   //width = actual_width * 0.95;
+   //height = actual_height * 0.95;
+   //margin = 40;
 
    var vectorNames = Object.keys(data.vectors)
 
@@ -51,29 +58,132 @@ r2d3.onRender(function(data, svg, width, height, options){
     // axes
     //------------------------------
     
-    xShift = margin;
+    xShift = sideMargin;
     yShift = height;
     translationString = `translate(${xShift}, ${yShift})`
-    
     r2d3.svg.append('g')
+        .attr("class", "axis")
         .attr('transform', translationString)
         .call(xAxis);
     
-    xShift = margin;
+    xShift = sideMargin;
     yShift = 0
     translationString = `translate(${xShift}, ${yShift})`
     
     r2d3.svg.append('g')
+        .attr("class", "axis")
         .attr('transform', translationString)
         .call(yAxis);
     
     //------------------------------
+    // axis labels
+    //------------------------------
+    let fontWeight = 400;
+    let xPos = 45;
+    let yPos = height/2;
+    translationString = `translate(${xPos}, ${yPos})`
+    r2d3.svg.append("text")             
+      .style("font-size", 14)
+      .style("font-weight", fontWeight)
+      .attr("transform", translationString)
+      .style("text-anchor", "middle")
+      .style("stroke", "blue")
+      .text("PROTEIN");
+
+    yPos = 20 + height/2;
+    translationString = `translate(${xPos}, ${yPos})`
+    r2d3.svg.append("text")             
+      .style("font-size", 12)
+      .style("font-weight", fontWeight)
+      .attr("transform", translationString)
+      .style("text-anchor", "middle")
+      .style("stroke", "blue")
+      .text("copy number");
+
+    xPos = (width/2) + sideMargin;
+    yPos = height + (0.8 * bottomMargin);
+    translationString = `translate(${xPos}, ${yPos})`
+    r2d3.svg.append("text")             
+      .style("font-size", 18)
+      .attr("transform", translationString)
+      .style("text-anchor", "middle")
+      .text("Day");
+
+      // Day0: MPP
+      // Day2 to Day4: MEP
+      // Day4 to Day11.5: CFU-E
+      // Day11.5 : ProEB
+      // Day14: BasoEB
+    
+    let developmentalStage_fontSize = 24;
+    let developmentalStage_fontStyle = "normal";
+    let developmentalStage_fontColor = "red";
+    let developmentalStage_textAnchor = "middle"
+
+   xPos = sideMargin;
+    yPos = height + (bottomMargin) + 20;
+    translationString = `translate(${xPos}, ${yPos})`
+    r2d3.svg.append("text")             
+      .style("font-size", developmentalStage_fontSize)
+      .style("font-style", developmentalStage_fontStyle)
+      .style("font-color", developmentalStage_fontColor)
+      .style("text-anchor", developmentalStage_textAnchor)
+      .attr("transform", translationString)
+      .text("MPP");
+
+    xPos = sideMargin + (3 * (width/14));
+    yPos = height + (bottomMargin) + 20;
+    translationString = `translate(${xPos}, ${yPos})`
+    r2d3.svg.append("text")             
+      .style("font-size", developmentalStage_fontSize)
+      .style("font-style", developmentalStage_fontStyle)
+      .style("font-color", developmentalStage_fontColor)
+      .style("text-anchor", developmentalStage_textAnchor)
+      .attr("transform", translationString)
+      .text("MEP");
+
+    xPos = sideMargin + (7.75 * (width/14));
+    yPos = height + (bottomMargin) + 20;
+    translationString = `translate(${xPos}, ${yPos})`
+    r2d3.svg.append("text")             
+      .style("font-size", developmentalStage_fontSize)
+      .style("font-style", developmentalStage_fontStyle)
+      .style("font-color", developmentalStage_fontColor)
+      .style("text-anchor", developmentalStage_textAnchor)
+      .attr("transform", translationString)
+      .text("CFU-E");
+
+    xPos = sideMargin + (11.5 * (width/14));
+    yPos = height + (bottomMargin) + 20;
+    translationString = `translate(${xPos}, ${yPos})`
+    r2d3.svg.append("text")             
+      .style("font-size", developmentalStage_fontSize)
+      .style("font-style", developmentalStage_fontStyle)
+      .style("font-color", developmentalStage_fontColor)
+      .style("text-anchor", developmentalStage_textAnchor)
+      .attr("transform", translationString)
+      .text("ProEB");
+
+    xPos = sideMargin + (14 * (width/14));
+    yPos = height + (bottomMargin) + 20;
+    translationString = `translate(${xPos}, ${yPos})`
+    r2d3.svg.append("text")             
+      .style("font-size", developmentalStage_fontSize)
+      .style("font-style", developmentalStage_fontStyle)
+      .style("font-color", developmentalStage_fontColor)
+      .style("text-anchor", developmentalStage_textAnchor)
+      .attr("transform", translationString)
+      .text("BasoEB");
+
+
+    //------------------------------
     // the plotting surface
     //------------------------------
     
-    xShift = margin;
+    xShift = sideMargin;
     yShift = 0;
     translationString = `translate(${xShift}, ${yShift})`
+
     var plottingSurface = r2d3.svg.append('g')
         .attr('transform', translationString)
         .attr('width', width)

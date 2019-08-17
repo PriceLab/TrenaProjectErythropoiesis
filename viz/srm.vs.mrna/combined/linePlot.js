@@ -16,7 +16,7 @@ r2d3.onRender(function(data, svg, width, height, options){
    var actual_width = d3Div.clientWidth;
    var actual_height = d3Div.clientHeight;
   
-   sideMargin = 170; // 40;
+   sideMargin = 170; 
    bottomMargin = 50;
    topMargin = 20;
 
@@ -76,14 +76,12 @@ r2d3.onRender(function(data, svg, width, height, options){
         .attr('transform', translationString)
         .call(xAxis);
 
-
     xShift = sideMargin;
     yShift = 0
     translationString = `translate(${xShift}, ${yShift})`
     
     r2d3.svg.append('g')
         .attr("class", "axis")
-        //.style("stroke", "blue")
         .attr('transform', translationString)
         .call(yAxis);
 
@@ -93,11 +91,9 @@ r2d3.onRender(function(data, svg, width, height, options){
     
     r2d3.svg.append('g')
         .attr("class", "axis")
-        //.style("stroke", "red")
         .attr('transform', translationString)
         .call(y2Axis);
     
-
     //------------------------------
     // axis labels
     //------------------------------
@@ -220,7 +216,6 @@ r2d3.onRender(function(data, svg, width, height, options){
       .style("text-anchor", developmentalStage_textAnchor)
       .attr("transform", translationString)
       .text("BasoEB");
-
 
 
     //------------------------------

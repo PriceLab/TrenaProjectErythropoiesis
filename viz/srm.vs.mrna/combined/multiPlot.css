@@ -1,3 +1,7 @@
+.axis {
+    font: 18px sans-serif;
+}
+
 .line_srm{
   fill: none;
   stroke: blue;

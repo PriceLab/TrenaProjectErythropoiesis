@@ -55,11 +55,11 @@ ui <- fluidPage(
         ),
 
    useShinyjs(),
-   titlePanel("SRM and RNA-seq in erythropoiesis"),
+   titlePanel("Transcription Factor Protein and RNA Expression Profiles During Erythropoiesis"),
 
    tabsetPanel(
-       tabPanel("SRM & rna compared", srm.rna.tab()),
-       tabPanel("SRM co-expression", srm.coexpression.tab())
+       tabPanel("Protein & RNA compared", srm.rna.tab()),
+       tabPanel("Temporal Protein Abundances", srm.coexpression.tab())
        ) # tabsetPanel
 
    ) # fluidPage
