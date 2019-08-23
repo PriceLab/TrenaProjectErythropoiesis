@@ -10,7 +10,6 @@ runTests <- function()
 {
    test_constructor()
    test_supportedGenes()
-   test_variants()
    test_expressionMatrices()
    test_genomicRegions()
    test_setTargetGene()
@@ -33,25 +32,6 @@ test_supportedGenes <- function()
    checkTrue(all(subset.expected %in% getSupportedGenes(tpe)))
 
 } # test_supportedGenes
-#------------------------------------------------------------------------------------------------------------------------
-test_variants <- function()
-{
-   message(sprintf("--- test_variants"))
-
-   checkEquals(getVariantDatasetNames(tpe), character(0))
-
-} # test_variants
-#------------------------------------------------------------------------------------------------------------------------
-test_bindingSiteDatabases <- function()
-{
-   message(sprintf("--- test_bindingSiteDatabases"))
-
-   expected <- c("extraembryonic_structure_wellington_16", "extraembryonic_structure_wellington_20",
-                 "extraembryonic_structure_hint_16", "extraembryonic_structure_hint_20")
-   checkTrue(is.na(getFootprintDatabaseNames(tpe)))
-   checkTrue(is.na(getFootprintDatabaseHost(tpe)))
-
-} # test_bindingSiteDatabases
 #------------------------------------------------------------------------------------------------------------------------
 test_expressionMatrices <- function()
 {
@@ -106,13 +86,14 @@ test_setTargetGene <- function()
 
    message(sprintf("    enhancers"))
    tbl.enhancers <- getEnhancers(tpe)
-   checkEquals(colnames(tbl.enhancers), c("chrom", "start", "end", "type", "combinedScore", "geneSymbol"))
+   column.subset.expected <- c("chrom", "start", "end", "gene", "eqtl", "hic")
+   checkTrue(all(column.subset.expected %in% colnames(tbl.enhancers)))
    checkTrue(nrow(tbl.enhancers) >= 20)
 
    message(sprintf("    geneGeneEnhancersRegion"))
    region <- getGeneEnhancersRegion(tpe, flankingPercent=0)
    checkTrue(all(c("chromLocString", "chrom", "start", "end") %in% names(region)))
-   checkEquals(region$chromLocString, "chr11:5227061-5379996")
+   checkEquals(region$chromLocString, "chr11:5227061-5384601")
 
    message(sprintf("    encode DHS"))
    tbl.dhs <- getEncodeDHS(tpe)
