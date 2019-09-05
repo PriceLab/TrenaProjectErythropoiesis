@@ -5,7 +5,7 @@ Version: 1.0.1
 Author: pshannon@systemsbiology.org
 Description: Trena and TrenaViz project for the analysis of erythropoiesis.
 Imports: methods
-Depends: R (>= 3.5.0), TrenaProjectHG38(>= 1.0)
+Depends: R (>= 3.5.0), TrenaProjectHG38(>= 1.0.2)
 License: Apache 2.0
 Encoding: UTF-8
 LazyData: true
