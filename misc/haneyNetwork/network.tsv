@@ -1,0 +1,30 @@
+Bptf	Myb OR Gata2 OR Ikzf1 OR Lmo2, Erg OR Ikzf1, Smarcc1, Nfe2
+Cbfa2t3h	Nfe2, Myb OR Meis1 OR Ikzf1, Gata2 OR Fli1 OR Gata1 OR Meis1, Ikzf1 OR Fli1 OR Gata2 OR Myb
+Erg	Erg AND Meis1
+Ets1	(Notch AND Tcf7) AND NOT(Etv6)
+Ets2	Smarcc1 OR Gfi1b OR Fli1
+Etv6	Smarcc1
+Fli1	Fli1 OR Meis1
+GATA1	GATA1
+GATA2	Nfe2, Bptf, Gfi1b OR Meis1, Gata1 OR Meis1, Cbfa2t3h OR Meis1, Cbfa2t3h OR Pbx1
+GATA3	GATA3 AND NOT Myb
+gfi1b	Gata1 OR Ets2 OR Gata2 OR Tal1
+Hhex	Nfe2
+Hoxa5	Tcf7
+Hoxa9	Ikzf1 AND Meis1
+Hoxb4	Tcf7
+Ikzf1	Smarcc1, Bptf, Cbfa2t2h OR Hoxa9
+Ldb1	Smarcc1, Myb OR Lmo2 OR Ikzf1
+Lmo2	Bptf, Nfe2, Lyl1, Ldb1 OR Meis1
+Lyl1	Smarcc1, Nfe2, Myb OR Hoxa9 OR Lmo2
+Meis1	Meis1 OR Erg
+Mitf	Fli1 AND Mitf
+Myb	(Gata1 OR Runx1) AND NOT (Gata3 AND Nkx2.3)
+Nfe2	Bptf, Lyl1, Fli1 OR Myb OR Lmo2 OR Meis1, Cbfa2t3h OR Lmo2 OR Gata2,  Gata2 OR Myb, Cbfa2t3h OR Fli1, Hhex OR Lmo2, Cbfa2t3h OR Meis1
+Nkx2.3	Nkx2.3 AND NOT Gata1
+Notch	Tcf7, Ets1 AND NOT Gata2, Ets1 AND NOT Nfe2, Lmo2 AND NOT Nfe2, Lmo2 AND NOT(Gata2 OR Gfi1b)
+Pbx1	Meis1
+Prdm16	Fli1 OR Myb OR Meis1
+Smarcc1	Bptf, Lyl1, Etv6 OR Ldb1 OR Ikzf1 OR Fli1, Fli1 OR Myb OR Ikzf1 OR Ets2, Ets2 OR Etv6, Fli1 OR Gata1
+Tal1	Lmo2 OR GATA1 OR Gfi1b OR Gata2
+Tcf7	Notch AND NOT Ikzf1, Hoxa5 AND NOT Ikzf1, Nkx2.3 AND NOT Ikzf1, Gata3 AND NOT Ikzf1, Hoxb4 AND NOT Ikzf1, Ets1 AND NOT Ikzf1, Gata1 AND NOT Ikzf1, Gata1 AND Hoxa5
