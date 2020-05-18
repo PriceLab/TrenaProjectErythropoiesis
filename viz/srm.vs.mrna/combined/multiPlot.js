@@ -29,10 +29,6 @@ r2d3.onRender(function(data, svg, width, height, options){
     var width = actual_width - (2 * sideMargin);
     var height = actual_height - (1 * (bottomMargin + topMargin)); //* 0.90;
 
-   //width = actual_width * 0.95;
-   //height = actual_height * 0.95;
-   //margin = 40;
-
    var vectorNames = Object.keys(data.vectors)
 
    var xScalingFunction = d3.scaleLinear()
@@ -46,6 +42,7 @@ r2d3.onRender(function(data, svg, width, height, options){
    var lineGenerator = d3.line()
        .x(function(d, i) {return xScalingFunction(d.x);})
        .y(function(d)    {return yScalingFunction(d.y);})
+       .defined(function(d){return d.y !== null;})
        .curve(lineDrawingScheme)
 
    var xAxis = d3.axisBottom()
@@ -223,18 +220,12 @@ r2d3.onRender(function(data, svg, width, height, options){
        plottingSurface.selectAll("dot")
          .data(oneDataset)
          .enter().append("circle") // Uses the enter().append() method
+           .filter(function(d) {return d.y != null;})
            .attr("class", "dot") // Assign a class for styling
            .attr("cx", function(d) {return xScalingFunction(d.x)})
            .attr("cy", function(d) {return yScalingFunction(d.y)})
            .attr("vName", vectorName)
            .attr("r", 5)
-           //.on("mouseover", function(d,i) {
-             // console.log(d3.select(this).attr("vName") + " " + colors[(colorNumber % colorCount)]);
-             //d3.select(this).append("text")
-             //  .text(vectorName)
-             //  .attr("x", x(xScalingFunction(d.x)))
-             //  .attr("y", y(yScalingFunction(d.y))); 
-             // });
        } // for vectorName
 
 }) // onRender

@@ -1,5 +1,4 @@
 library(shiny)
-library(shinyjs)
 library(r2d3)
 #------------------------------------------------------------------------------------------------------------------------
 printf <- function(...) print(noquote(sprintf(...)))
@@ -7,14 +6,21 @@ printf <- function(...) print(noquote(sprintf(...)))
 load("../docker/srm.rna.averaged.clean.RData")
 max.time.points <- 13
 goi <- rownames(mtx.rna)
+# these three proteins have spotty srm data, though good rna-seq.
+# marjorie and jeff ask that they be eliminated in the protein/rna list
+bad.proteins <- c("ETO2", "MLL1", "SPT16")
+goi.for.comparison <- setdiff(goi, bad.proteins)
+# apply(mtx.srm[bad.proteins,], 1, function(row) length(which(is.na(row))))
+#       ETO2  MLL1 SPT16
+#          7     5     7
 #------------------------------------------------------------------------------------------------------------------------
 srm.rna.tab <- function()
 {
    sidebarLayout(
       sidebarPanel(
-         #radioButtons("srm.rna.transformChoice", "Data Transform",
-         #             c("None", "Normalized", "Arcsinh")),
-         selectInput("geneSelector", "Plot Protein and mRNA", goi, selected=goi[1],  multiple=FALSE),
+         selectInput("geneSelector", "Plot Protein and mRNA",
+                     goi.for.comparison,
+                     selected=goi.for.comparison[1],  multiple=FALSE),
          radioButtons("srm.rna.lineTypeSelector", "Smoothing", c("No", "Yes")),
          width=2
          ),
@@ -32,7 +38,7 @@ srm.coexpression.tab <- function()
       sidebarPanel(
          radioButtons("srm.transformChoice", "Data Transform", c("None", "Normalized")), # , "Arcsinh")),
          radioButtons("srm.lineTypeSelector", "Smoothing", c("No", "Yes")),
-         selectInput("srmSelector", "", goi, selected=NULL,  multiple=FALSE, size=20, selectize=FALSE),
+         selectInput("srmSelector", "Plot Protein", goi, selected=NULL,  multiple=FALSE),
          sliderInput("correlationThresholdSlider", label = "Pearson", min = 0, max = 1, value = 0.9, step = 0.01),
          radioButtons("correlationDirectionChooser", "Find Correlations", c("None", "+", "-")),
          br(),
@@ -54,7 +60,6 @@ ui <- fluidPage(
         tags$link(rel = "stylesheet", type = "text/css", href = "app.css")
         ),
 
-   useShinyjs(),
    titlePanel("Transcription Factor Protein and RNA Expression Profiles During Erythropoiesis"),
 
    tabsetPanel(
@@ -69,7 +74,7 @@ server <- function(input, output, session) {
 
    reactiveState <- reactiveValues(selectedTF=NULL, correlatedTFs=list())
 
-   observeEvent(input$srmSelector, ignoreInit=TRUE, {
+   observeEvent(input$srmSelector, ignoreInit=FALSE, {
       plotCorrelatedProteins(input, output)
       })
 
@@ -108,7 +113,6 @@ server <- function(input, output, session) {
 #      })
 
   output$srm.rna.d3 <- renderD3({
-     #transform <- input$srm.rna.transformChoice
      lineSmoothing <- input$srm.rna.lineTypeSelector
      r2d3.command <- "plotBoth"
      xValues <- as.numeric(sub("d_", "", colnames(mtx.srm)))
@@ -239,8 +243,10 @@ findCorrelated <- function(targetTF, threshold, direction)
    if(direction == "None")
       return(targetTF)
 
-   correlations <- apply(mtx.srm, 1, function(row) cor(mtx.srm[targetTF,], row))
-   # browser()
+   suppressWarnings(
+      correlations <- apply(mtx.srm, 1,
+                           function(row) cor(mtx.srm[targetTF,], row,  use="complete.obs"))
+      )
 
    if(direction == "-")
       result <- names(which(correlations <= (-1 * threshold)))
@@ -250,20 +256,6 @@ findCorrelated <- function(targetTF, threshold, direction)
    return(unique(c(targetTF, result)))
 
 } # findCorrelated
-#------------------------------------------------------------------------------------------------------------------------
-old.findCorrelated <- function(targetTF, threshold, negative=FALSE)
-{
-   correlations <- apply(mtx.srm, 1, function(row) cor(mtx.srm[targetTF,], row))
-   # browser()
-
-   if(negative)
-      result <- names(which(correlations <= (-1 * threshold)))
-   else
-      result <- names(which(correlations >= threshold))
-
-   return(unique(c(targetTF, result)))
-
-} # old.findCorrelated
 #------------------------------------------------------------------------------------------------------------------------
 plotCorrelatedProteins <- function(input, output)
 {
@@ -281,7 +273,7 @@ plotCorrelatedProteins <- function(input, output)
 #------------------------------------------------------------------------------------------------------------------------
 plotTFs <- function(tfs, input, output, transform)
 {
-   #printf("plotTFs (%s): %s", transform, paste(tfs, collapse=", "))
+   printf("plotTFs (%s): %s", transform, paste(tfs, collapse=", "))
 
    timePoints <- as.numeric(sub("d_", "", colnames(mtx.srm)))
    srm.vectors <- lapply(tfs, function(tf) as.numeric(mtx.srm[tf,]))
@@ -305,7 +297,7 @@ plotTFs <- function(tfs, input, output, transform)
    lineSmoothing <- input$srm.lineTypeSelector
 
    data <- list(vectors=vectorsWithTimes, xMax=xMax, yMax=yMax, cmd="plot", smoothing=lineSmoothing)
-
+   # if("ETO2" %in% tfs) browser()
    r2d3(data, script = "multiPlot.js")
 
 } # plotTFs
@@ -315,7 +307,7 @@ maxOfVectors <- function(vectorList)
    max <- 0
    for(vector in vectorList){
       vector.max <- max(vector, na.rm=TRUE)
-      if(is.na(vector.max)) browser()
+      #if(is.na(vector.max)) browser()
       if(vector.max > max)
          max <- vector.max
       } # for vector
@@ -333,7 +325,7 @@ transformData.srm <- function(srm, transformName)
       }
 
    if(transformName == "Normalized"){
-      srm.out <- lapply(srm, function(vec) vec/max(vec))
+      srm.out <- lapply(srm, function(vec) vec/max(vec, na.rm=TRUE))
       }
 
    if(transformName == "Arcsinh"){
