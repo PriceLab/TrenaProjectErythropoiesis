@@ -1,5 +1,5 @@
 printf <- function(...) print(noquote(sprintf(...)))
-install.packages("BiocManager", repos="https://cran.cnr.berkeley.edu")
+install.packages("BiocManager", repos="https://cran.rstudio.com")
 biocGet <- function(pkgs){
    library(BiocManager)
    BiocManager::install(pkgs, update=FALSE)

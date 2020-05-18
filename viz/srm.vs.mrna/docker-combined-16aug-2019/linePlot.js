@@ -44,14 +44,13 @@ r2d3.onRender(function(data, svg, width, height, options){
    var lineFunction1 = d3.line()
        .x(function(d, i) { return xScalingFunction(d.x); }) // set the x values for the line generator
        .y(function(d) { return yScalingFunction(d.y); }) // set the y values for the line generator 
-       //.curve(d3.curveMonotoneX)
-       //.curve(d3.curveLinear) // apply smoothing to the line
+       .defined(function(d){return d.y !== null;})
        .curve(lineDrawingScheme)
 
    var lineFunction2 = d3.line()
+       .defined(function(d){return d.y !== null;})
        .x(function(d, i) { return xScalingFunction(d.x); }) // set the x values for the line generator
        .y(function(d) { return y2ScalingFunction(d.y); }) // set the y values for the line generator 
-       //.curve(d3.curveMonotoneX)
        .curve(lineDrawingScheme)
 
    var xAxis = d3.axisBottom()
@@ -232,14 +231,6 @@ r2d3.onRender(function(data, svg, width, height, options){
         .attr('height', height)
         .attr('class', 'plottingSurface')   
 
-    //console.log("=== about to remove all from plottingSurface")
-    //plottingSurface.selectAll("*").remove();
-
-    //var margin = {top: 50, right: 50, bottom: 50, left: 50}
-    //var width = window.innerWidth - margin.left - margin.right // Use the window's width 
-    //var height = window.innerHeight - margin.top - margin.bottom; // Use the window's height
-    
-    
     plottingSurface.append("path")
         .datum(dataset) // 10. Binds data to the line 
         .attr("class", "line_srm") // Assign a class for styling 
@@ -248,10 +239,11 @@ r2d3.onRender(function(data, svg, width, height, options){
     plottingSurface.selectAll("dot")
         .data(dataset)
         .enter().append("circle") // Uses the enter().append() method
-        .attr("class", "dot") // Assign a class for styling
-        .attr("cx", function(d) { return xScalingFunction(d.x) })
-        .attr("cy", function(d) { return yScalingFunction(d.y) })
-        .attr("r", 5)
+          .filter(function(d) {return d.y != null;})
+          .attr("class", "dot") // Assign a class for styling
+          .attr("cx", function(d) { return xScalingFunction(d.x) })
+          .attr("cy", function(d) { return yScalingFunction(d.y) })
+          .attr("r", 5)
     
     var dataset = data.rna
     

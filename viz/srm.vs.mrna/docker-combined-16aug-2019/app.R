@@ -3,13 +3,13 @@ library(r2d3)
 #------------------------------------------------------------------------------------------------------------------------
 printf <- function(...) print(noquote(sprintf(...)))
 #------------------------------------------------------------------------------------------------------------------------
-load("../docker/srm.rna.averaged.clean.RData")
+load("srm.rna.averaged.clean.RData")
 max.time.points <- 13
 goi <- rownames(mtx.rna)
 # these three proteins have spotty srm data, though good rna-seq.
 # marjorie and jeff ask that they be eliminated in the protein/rna list
 bad.proteins <- c("ETO2", "MLL1", "SPT16")
-goi.for.comparison <- setdiff(goi, bad.proteins)
+goi.for.comparison <- goi # setdiff(goi, bad.proteins)
 # apply(mtx.srm[bad.proteins,], 1, function(row) length(which(is.na(row))))
 #       ETO2  MLL1 SPT16
 #          7     5     7
@@ -94,24 +94,6 @@ server <- function(input, output, session) {
       plotCorrelatedProteins(input, output)
       })
 
-
-
-  # output$timeStepDisplay <- renderText({
-  #     reactiveState$timeStep
-  #     })
-#
-#   observeEvent(input$forwardTimeStepButton, ignoreInit=FALSE, {
-#      currentValue <- reactiveState$timeStep
-#      if(currentValue == max.time.points) return()
-#      reactiveState$timeStep <- reactiveState$timeStep + 1
-#      })
-#
-#   observeEvent(input$backwardTimeStepButton, ignoreInit=FALSE, {
-#      currentValue <- reactiveState$timeStep
-#      if(currentValue == 1) return()
-#      reactiveState$timeStep <- reactiveState$timeStep - 1
-#      })
-
   output$srm.rna.d3 <- renderD3({
      lineSmoothing <- input$srm.rna.lineTypeSelector
      r2d3.command <- "plotBoth"
@@ -119,6 +101,7 @@ server <- function(input, output, session) {
      xMax <- max(xValues)
      yMax <- 1.0
      tf <- input$geneSelector[1]
+     printf("plotting srm+rna for %d (%s)", tf, lineSmoothing)
      timepoints <- as.numeric(sub("d_", "", colnames(mtx.rna)))
      rna.values <- as.numeric(mtx.rna[tf,])
      srm.values <- as.numeric(mtx.srm[tf,])
@@ -130,14 +113,13 @@ server <- function(input, output, session) {
      xMin <- min(timepoints)
      xMax <- max(timepoints)
      yMin <- 0
-     yMax <- max(c(rna.values, srm.values))
-     y2Max <- max(rna.values)
+     yMax <- max(c(rna.values, srm.values), na.rm=TRUE)
+     y2Max <- max(rna.values, na.rm=TRUE)
 
      rna.xy <- lapply(seq_len(length(timepoints)), function(i) return(list(x=timepoints[i], y=rna.values[i])))
      srm.xy <- lapply(seq_len(length(timepoints)), function(i) return(list(x=timepoints[i], y=srm.values[i])))
 
      data <- list(rna=rna.xy, srm=srm.xy, xMax=xMax, yMax=yMax, y2Max=y2Max, cmd=r2d3.command, smoothing=lineSmoothing)
-     # browser()
      r2d3(data, script = "linePlot.js")
      })
 
@@ -225,8 +207,8 @@ transformData.rna.srm <- function(rna, srm, transformName)
       }
 
    if(transformName == "Normalized"){
-      rna.out <- rna/max(rna)
-      srm.out <- srm/max(srm);
+      rna.out <- rna/max(rna, na.rm=TRUE)
+      srm.out <- srm/max(srm, na.rm=TRUE);
       }
 
    if(transformName == "Arcsinh"){
@@ -273,7 +255,6 @@ plotCorrelatedProteins <- function(input, output)
 #------------------------------------------------------------------------------------------------------------------------
 plotTFs <- function(tfs, input, output, transform)
 {
-   printf("plotTFs (%s): %s", transform, paste(tfs, collapse=", "))
 
    timePoints <- as.numeric(sub("d_", "", colnames(mtx.srm)))
    srm.vectors <- lapply(tfs, function(tf) as.numeric(mtx.srm[tf,]))
@@ -295,6 +276,7 @@ plotTFs <- function(tfs, input, output, transform)
       }
 
    lineSmoothing <- input$srm.lineTypeSelector
+   printf("plotTFs (%s, %s): %s", transform, lineSmoothing, paste(tfs, collapse=", "))
 
    data <- list(vectors=vectorsWithTimes, xMax=xMax, yMax=yMax, cmd="plot", smoothing=lineSmoothing)
    # if("ETO2" %in% tfs) browser()
@@ -337,4 +319,6 @@ transformData.srm <- function(srm, transformName)
 } # transformData.srm
 #------------------------------------------------------------------------------------------------------------------------
 shinyApp(ui = ui, server = server)
+#runApp(shinyApp(ui = ui, server = server), port=8888)
+
 

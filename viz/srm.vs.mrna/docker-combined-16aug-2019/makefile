@@ -1,4 +1,4 @@
-ID = 16aug2019
+ID = 18may2020
 IMAGE_NAME = srm_rna_combined$(ID)
 TESTPORT=60055
 
