@@ -31,7 +31,8 @@ r2d3.onRender(function(data, svg, width, height, options){
    var lineFunction = d3.line()
        .x(function(d, i) { return xScalingFunction(d.x); }) // set the x values for the line generator
        .y(function(d) { return yScalingFunction(d.y); }) // set the y values for the line generator 
-       .curve(d3.curveLinear) // apply smoothing to the line
+       .curve(d3.curveMonotoneX)
+       //.curve(d3.curveLinear) // apply smoothing to the line
 
    var xAxis = d3.axisBottom()
        .scale(xScalingFunction);

@@ -16,10 +16,7 @@ r2d3.onRender(function(data, svg, width, height, options){
    height = actual_height * 0.95;
    margin = 40;
 
-
-   // console.log("cmd: " + data.cmd)
    var vectorNames = Object.keys(data.vectors)
-   debugger;
     
    var xScalingFunction = d3.scaleLinear()
        .domain([0, xMax * 1.1])  // the range of the values to plot
@@ -81,6 +78,7 @@ r2d3.onRender(function(data, svg, width, height, options){
     debugger;
     
     var colorNumber = -1;
+
     for(vectorName of vectorNames){
        colorNumber = colorNumber + 1
        console.log("adding " + vectorName);
@@ -93,7 +91,7 @@ r2d3.onRender(function(data, svg, width, height, options){
          .attr("stroke-width", 2)
          .attr("stroke", d3.schemeCategory10[colorNumber])
 
-       plottingSurface.selectAll("dot")
+       plottingSurface.selectAll("foo")
          .data(dataset)
          .enter().append("circle") // Uses the enter().append() method
          .attr("class", "dot") // Assign a class for styling
@@ -102,23 +100,6 @@ r2d3.onRender(function(data, svg, width, height, options){
          .attr("r", 10)
 
        } // for vectorName
-
-    /************
-    var dataset = data.rna
-    
-    plottingSurface.append("path")
-        .datum(dataset) // 10. Binds data to the line 
-        .attr("class", "line_rna") // Assign a class for styling 
-        .attr("d", lineGenerator),
-    
-    plottingSurface.selectAll("dot")
-        .data(dataset)
-        .enter().append("circle") // Uses the enter().append() method
-        .attr("class", "dotrna") // Assign a class for styling
-        .attr("cx", function(d) { return xScalingFunction(d.x) })
-        .attr("cy", function(d) { return yScalingFunction(d.y) })
-        .attr("r", 10)
-     **********/
 
 }) // onRender
 //------------------------------------------------------------------------------------------------------------------------

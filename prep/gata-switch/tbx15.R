@@ -3,8 +3,12 @@ library(igvR)
 library(trenaSGM)
 library(FimoClient)
 library(RUnit)
+library(AnnotationHub)
+source(file.path(Sys.getenv("HOME"), "github", "fimoService", "batchMode", "fimoBatchTools.R"))
 #------------------------------------------------------------------------------------------------------------------------
 state <- new.env(parent=emptyenv())
+epigenetic.markers <- c("H3K4me3", "H3K27me3", "H3K36me3", "H3k4me1", "H3K9me3", "H3K27ac")
+
 #------------------------------------------------------------------------------------------------------------------------
 library (RColorBrewer)
 totalColorCount <- 12
@@ -30,11 +34,11 @@ if(!exists("igv")){
    setGenome(igv, "hg38")
    }
 #------------------------------------------------------------------------------------------------------------------------
-displayGeneHancer <- function(gene)
+displayGeneHancer <- function(gene="GATA2")
 {
    setTargetGene(tpe, gene)
    tbl.enhancers <- getEnhancers(tpe)
-   track <- DataFrameQuantitativeTrack("GH", tbl.enhancers[, c("chrom", "start", "end", "combinedScore")],
+   track <- DataFrameQuantitativeTrack("GH", tbl.enhancers[, c("chrom", "start", "end", "combinedscore")],
                                        "brown", autoscale=FALSE, min=0, max=100)
    displayTrack(igv, track)
    with(tbl.enhancers, showGenomicRegion(igv, sprintf("%s:%d-%d", unique(chrom), min(start)-1000, max(end) + 1000)))
@@ -121,7 +125,7 @@ test_displayATACseq <- function()
 
 } # test_displayATACseq
 #------------------------------------------------------------------------------------------------------------------------
-findTFs <- function(tbl.regions, threshold=1e-4)
+old.findTFs <- function(tbl.regions, threshold=1e-4)
 {
     FIMO_HOST <- "khaleesi"
     FIMO_PORT <- 60000
@@ -144,12 +148,40 @@ findTFs <- function(tbl.regions, threshold=1e-4)
 
     tbl.matches
 
+} # old.findTFs
+#------------------------------------------------------------------------------------------------------------------------
+findTFs <- function(tbl.regions, fimo.threshold=1e-4, name, display, memeFile)
+{
+
+   tbl.motifMatches <- fimoBatch(tbl.regions, matchThreshold=fimo.threshold,
+                                 genomeName="hg38", pwmFile=memeFile)
+
+   if(nrow(tbl.motifMatches) > 0){
+     if(display){
+        track <- DataFrameQuantitativeTrack(name,
+                                            tbl.motifMatches[, c("chrom", "start", "end", "score")],
+                                            autoscale=TRUE, color="blue")
+        displayTrack(igv, track)
+        } # if display
+     } # if nrow
+
+   invisible(tbl.motifMatches)
+
 } # findTFs
 #------------------------------------------------------------------------------------------------------------------------
 test_findTFs <- function()
 {
    printf("--- test_findTFs")
-   tbl.bindingSites <- findTFs(state$tbl.regions.condensed)
+   tbl.regions <- data.frame(chrom="chr3", start=128482906, end=128483594, stringsAsFactors=TRUE)
+
+   tbl.1 <- findTFs(tbl.regions, fimo.threshold=1e-3)
+   dim(tbl.1)
+   tbl.2 <- findTFs(tbl.regions, fimo.threshold=1e-6)
+
+   track <- DataFrameQuantitativeTrack("fimo 1e-3", tbl.1[, c(1,2,3,6)], autoscale=TRUE)
+   displayTrack(igv, track)
+
+
    tbl.bindingSites <- fixReg(tbl.bindingSites, "GATA2")
    state$tbl.bindingSites <- tbl.bindingSites
 
@@ -157,8 +189,6 @@ test_findTFs <- function()
 #------------------------------------------------------------------------------------------------------------------------
 displayBindingSites <- function()
 {
-   tbl.bs <- state$tbl.bindingSites
-
    motifs <- grep("TBX15", tbl.bs$motifName, v=TRUE)
    table(motifs)  # yikes!
                   # Hsapiens-HOCOMOCOv10-TBX15_HUMAN.H10MO.D 99
@@ -250,4 +280,106 @@ lookForChIPseq <- function()
     dbGetQuery(db, "select * from experiments limit 3")[, c("antigen", "cellType")]
 
 } # lookForChIPseq
+#------------------------------------------------------------------------------------------------------------------------
+displayMethylationMarks <- function()
+{
+   print(load("h3k4me3.gr.RData"))  # created ~/github/trena/documents/gata2/tbx15.R
+   track <- GRangesQuantitativeTrack("h3k4me3.gr", gr.gata2, autoscale=TRUE, color="green")
+   displayTrack(igv, track)
+
+
+} # displayMethylationMarks
+#------------------------------------------------------------------------------------------------------------------------
+addMethylationTrack <- function()
+{
+  loc <- getGenomicRegion(igv)
+  saved.data.file <- "gr.hg38.generous.gata2.RData"
+
+  if(!file.exists(saved.data.file)){
+     aHub <- AnnotationHub()
+     key <- "AH36576"
+     x <- aHub[[key]]
+     xi <- import(x)
+     system("curl -O http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz")
+     system("gunzip hg19ToHg38.over.chain.gz")
+     chain <- import.chain("hg19ToHg38.over.chain")
+     x.hg38 <- liftOver(xi, chain)
+     gr.hg38 <- unlist(x.hg38)
+     seqinfo(gr.hg38) <- SeqinfoForUCSCGenome("hg38")[seqlevels(gr.hg38)]
+     gr.hg38.gata2.region <- gr.hg38[chrom(gr.hg38)==loc$chrom &
+                                     start(gr.hg38) >= loc$start &
+                                     end(gr.hg38)   <= loc$end]
+     length(gr.hg38.gata2.region)  # 13279
+     save(gr.hg38.gata2.region, file=saved.data.file)
+     } else {
+        load(saved.data.file)
+        }
+
+  track <- GRangesQuantitativeTrack("h3k27ac", gr.hg38.gata2.region, autoscale=TRUE, color="green")
+  displayTrack(igv, track)
+
+} # addMethylationTrack
+#------------------------------------------------------------------------------------------------------------------------
+displayEpigeneticTrack <- function(markerName, loc)
+{
+   printf("---- marker: %s", markerName)
+
+
+  gr.hg38 <- get(load(sprintf("gr.%s.RData", markerName)))
+
+  gr.sub <- gr.hg38[chrom(gr.hg38)==loc$chrom &
+                    start(gr.hg38) >= loc$start &
+                    end(gr.hg38)   <= loc$end]
+
+  track <- GRangesQuantitativeTrack(markerName, gr.sub, autoscale=TRUE, color="green")
+  displayTrack(igv, track)
+
+} # displayEpigeneticTrack
+#------------------------------------------------------------------------------------------------------------------------
+displayAtacSeqBamFiles <- function()
+{
+   bamFiles <- sort(list.files("gata2-bamFiles")) # "ATAC_Cord_d10_rep1_hg38_chr3_gata2_sorted.bam")
+   names <- sub("_hg38.*$", "", sub("ATAC_Cord_", "", bamFiles))
+   for(i in seq_len(length(bamFiles))){
+      bamFile <- file.path("gata2-bamFiles", bamFiles[i])
+      trackName <- sprintf("bam-%s", names[i])
+      x <- readGAlignments(bamFile, use.names=TRUE) #, param=param)
+      track <- GenomicAlignmentTrack(trackName, x, trackHeight=50, visibilityWindow=1000000, color="random")
+      displayTrack(igv, track)
+      }
+
+} # displayAtacSeqBamFiles
+#------------------------------------------------------------------------------------------------------------------------
+#   print(system.time(tbl.match <- fimoBatch(tbl.np, matchThreshold=fimo.threshold, genomeName="hg19",
+#                                            pwmFile="ctcf-human.meme")))
+reproduce <- function()
+{
+  displayGeneHancer(gene="GATA2")
+  loc <- getGenomicRegion(igv)
+  tbl.all <- getATACseq(loc$chrom, loc$start, loc$end)
+  displayATACseq(tbl.all)
+  # state$tbl.all <- tbl.all
+
+  #displayBindingSites()
+
+  tbl.regions <- data.frame(chrom=loc$chrom, start=loc$start, end=loc$end, stringsAsFactors=FALSE)
+
+  addMethylationTrack()
+
+  loc <- getGenomicRegion(igv)
+
+  for(marker in epigenetic.markers){
+     displayEpigeneticTrack(marker, loc)
+     }
+
+  pfms.hocomoco <- MotifDb::query(MotifDb, c("sapiens", "tbx15", "hocomoco"))
+  pfms.jaspar2018 <- MotifDb::query(MotifDb, c("sapiens", "tbx15", "jaspar2018"))
+
+  export(pfms.hocomoco, "tbx15-hocomoco-human.meme", 'meme')
+  export(pfms.jaspar2018, "tbx15-jaspar2018-human.meme", 'meme')
+
+  tbl.hocomoco <- findTFs(tbl.regions, 1e-4, "TBX15:hocomco", TRUE, "tbx15-hocomoco-human.meme")
+  tbl.jaspar   <- findTFs(tbl.regions, 1e-3, "TBX15:jaspar:1e-3",  TRUE, "tbx15-jaspar2018-human.meme")
+
+} # reproduce
 #------------------------------------------------------------------------------------------------------------------------

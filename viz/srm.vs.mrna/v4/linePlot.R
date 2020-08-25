@@ -20,13 +20,6 @@ ui <- fluidPage(
          radioButtons("transformChoice", "Data Transform",
                       c("None", "Normalized", "Arcsinh")),
          selectInput("geneSelector", "Single TF: rna + srm", goi, selected=goi[1],  multiple=FALSE),
-         #selectInput("srmSelector", "Multiple TFs: srm", goi, selected=goi[1],  multiple=TRUE),
-         #sliderInput("correlationThresholdSlider", label = "abs(pearson)", min = 0, max = 1, value = 0.9, step = 0.01),
-         #actionButton("forwardTimeStepButton", "+", style="margin-bottom: 20px; margin-left: 20px; font-size:200%"),
-         #actionButton("backwardTimeStepButton", "-", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
-         #verbatimTextOutput("timeStepDisplay"),
-         #actionButton("clearPlotButton", "Clear", style="margin-bottom: 20px; margin-left: 10px; font-size:200%"),
-         #sliderInput("dayNumberSlider", label = "Day:", min = 0, max = 12, value = 0, step = 1, round=TRUE),
          width=2
          ),
       mainPanel(

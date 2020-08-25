@@ -1,2 +1,7 @@
+GATA1
 GATA2
+KLF1
+TAL1
+
+
 
