@@ -1,0 +1,39 @@
+.axis {
+    font: 18px sans-serif;
+}
+
+.line_srm{
+  fill: none;
+  stroke: black;
+  stroke-width: 1;
+  }
+
+.line_rna{
+  fill: none;
+  stroke: gray;
+  stroke-width: 1;
+  }
+  
+.overlay {
+  fill: none;
+  pointer-events: all;
+  }
+
+.dot {
+    fill: blue;
+    stroke: #fff;
+  }
+
+.dotrna {
+    fill: red;
+    stroke: #fff;
+  }
+  
+.developmentStageLabel {
+    font-color: red;
+}
+
+.focus circle {
+  fill: none;
+  stroke: steelblue;
+  }
