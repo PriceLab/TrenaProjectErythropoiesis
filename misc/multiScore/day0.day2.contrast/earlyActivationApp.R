@@ -50,16 +50,16 @@ EarlyActivationApp <- R6Class("app",
                                      height="800",
                                      border="1px solid purple; border-radius: 5px;")
          private$dtw = dataTableWidget$new(id="dtw", private$tbl,
-                                           width="100%", height="800px",
+                                           width="100%", height="1000px",
                                            border="1px blue solid; border-radius: 5px;",
-                                           pageLength=15,
+                                           pageLength=25,
                                            lengthMenu=c(5,15,25,50))
          private$msgBox =  msgBoxWidget$new(id="box1", title="", boxWidth=200)
          },
 
       #---------------------------------------------------------------------------------------
       ui = function(){
-        tabsetPanel(type="tabs",id="mainTabs",
+        tabsetPanel(type="tabs",id="mainTabs", selected="geneExpressionTab",
            tabPanel(title="Introduction", value="introductionTab", includeHTML("intro.html")),
            tabPanel(title="Gene Expression", value="geneExpressionTab",
                   dashboardPage(
@@ -109,7 +109,6 @@ EarlyActivationApp <- R6Class("app",
            gene.of.interest <- selected.genes[1]
            updateTabsetPanel(session, "mainTabs", selected="igvTab")
            later(function(){
-               private$msgBox$setText(paste(selected.genes, collapse=", "))
                private$igv$setLocus(gene.of.interest)
                loc.list <- self$addGeneHancerTracks(gene.of.interest)
                printf("back from gh")
@@ -129,6 +128,7 @@ EarlyActivationApp <- R6Class("app",
                with(loc.list, printf("full loc, from gh or service: %dk", as.integer((end-start)/1000)))
                print(loc.list)
                with(loc.list, private$igv$setLocus(sprintf("%s:%d-%d", chrom, start, end)))
+               private$msgBox$setText(paste(selected.genes, collapse=", "))
                self$addCorcesATACtracks(loc.list)
                }, 1)
            }) # observe tableSelection()

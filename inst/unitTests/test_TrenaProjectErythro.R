@@ -226,8 +226,9 @@ demo_extractEarlyTimePointHighlyExpressedGenes <- function()
    checkTrue(all(expected %in% getExpressionMatrixNames(tpe)))
    mtx <- getExpressionMatrix(tpe, expected[1])
 
-   cutoff <- 8
-   goi <- names(which(sapply(rownames(mtx), function(r) all(mtx[r, 1:4] > cutoff))))
+   cutoff <- 13
+   goi <- names(which(sapply(rownames(mtx), function(r) all(mtx[r, 3:4] > cutoff))))
+   length(goi)
    goi.string <- toJSON(goi)
    uri <- sprintf("http://localhost:8000/goEnrich")
    body.jsonString <- sprintf('%s', toJSON(list(geneSymbols=goi)))
@@ -249,14 +250,21 @@ demo_extractEarlyTimePointHighlyExpressedGenes <- function()
    tbl.kegg <- fromJSON(content(r)[[1]])
 
 
+   cutoff.1 <- 0.5
+   cutoff.2 <- 1
 
-   cutoff.1 <- 10
-   cutoff.2 <- 7
+   cutoff.1 <- 0.5
+   cutoff.2 <- 3
 
-   goi <- names(which(sapply(rownames(mtx), function(geneName) all(mtx[geneName, 1:2] > cutoff.1))))
-   print(length(goi))
-   goi <- names(which(sapply(goi, function(geneName) all(mtx[geneName, 3:4] < cutoff.2))))
-   print(length(goi))
+
+   goi.0 <- names(which(sapply(rownames(mtx), function(geneName) all(mtx[geneName, 1:2] < cutoff.1))))
+   print(length(goi.0))
+   goi.2 <- names(which(sapply(rownames(mtx), function(geneName) all(mtx[geneName, 3:4] > cutoff.2))))
+   print(length(goi.2))
+
+   length(intersect(goi.0, goi.2))
+   goi <-intersect(goi.0, goi.2)
+   length(goi)
 
    goi.string <- toJSON(goi)
    uri <- sprintf("http://localhost:8000/goEnrich")
@@ -267,11 +275,17 @@ demo_extractEarlyTimePointHighlyExpressedGenes <- function()
       #sprintf('{"geneSymbols": "%s"}', goi.string))
    tbl <- fromJSON(content(r)[[1]])
    dim(tbl)
-   tbl[c(1,6,8,21),-1][,c(6,5,1, 7)]
 
+   require(RColorBrewer)
+   colors <- c(brewer.pal(12, "Paired"), brewer.pal(8, "Dark2"))
+   lineType <- "b"
+   plot(mtx[goi[1],], col=sample(colors, size=1), type=lineType, ylim=c(0,9),
+        main=sprintf("expression levels of %d genes unexpressed at day 0", length(goi)))
+   for(i in 2:length(goi)){
+       lines(mtx[goi[i],], col=sample(colors, size=1), type=lineType)
+       }
 
-
-
+   save(goi, file="genes-with-zero-expression-on-day-zero-nonZero-on-day-two.RData")
 
 } # demo_extractEarlyTimePointHighlyExpressedGenes
 #------------------------------------------------------------------------------------------------------------------------

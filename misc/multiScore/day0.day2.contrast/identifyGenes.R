@@ -9,16 +9,16 @@ expected <- c("brandLabDifferentiationTimeCourse-16173x28", "brandLabDifferentia
 checkTrue(all(expected %in% getExpressionMatrixNames(tpe)))
 mtx <- getExpressionMatrix(tpe, expected[1])
 
-cutoff.1 <- 0.5
-cutoff.2 <- 3
+cutoff.1 <- 0.25
+cutoff.2 <- 2
 
 goi.0 <- names(which(sapply(rownames(mtx), function(geneName) all(mtx[geneName, 1:2] < cutoff.1))))
-print(length(goi.0))
+print(length(goi.0))  # 902
 goi.2 <- names(which(sapply(rownames(mtx), function(geneName) all(mtx[geneName, 3:4] > cutoff.2))))
-print(length(goi.2))
+print(length(goi.2))  # 10299
 
-goi <-intersect(goi.0, goi.2)
-length(goi)
+goi <- intersect(goi.0, goi.2)
+length(goi)  # 11
 
 goi.string <- toJSON(goi)
 uri <- sprintf("http://localhost:8000/goEnrich")
