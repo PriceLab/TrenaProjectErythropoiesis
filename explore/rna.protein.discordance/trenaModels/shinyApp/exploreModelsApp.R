@@ -39,10 +39,15 @@ DemoApp = R6Class("DemoApp",
             printf("--- loading %s", filename)
             tbl.tmp <- get(load(filename))
             printf("--- load complete")
-            coi <- c("target", "gene", "class", "spearmanCoeff", "rfScore")
+            coi <- c("target", "gene", "class", "spearmanCoeff", "pearsonCoeff", "betaLasso",
+                     "betaRidge", "rfScore", "xgboost")
             tbl.tmp <- tbl.tmp[, coi]
             colnames(tbl.tmp)[2] <- "TF"
             rownames(tbl.tmp) <- NULL
+            tbl.tmp$pearsonCoeff <- round(tbl.tmp$pearsonCoeff, 2)
+            tbl.tmp$betaLasso <- round(tbl.tmp$betaLasso, 2)
+            tbl.tmp$betaRidge <- round(tbl.tmp$betaRidge, 2)
+            tbl.tmp$xgboost <- round(tbl.tmp$xgboost, 2)
             private$tbl.models <- tbl.tmp
             private$tbl.sub <- private$tbl.models
             private$tbl.currentSubset <- private$tbl.models
@@ -116,11 +121,16 @@ DemoApp = R6Class("DemoApp",
                       ) # sidebarLayout for openChromatin
                       ), # tabPanel
                  tabPanel(title="Heatmap", value="heatmapTab",
-                    #wellPanel(
-                    #    div(htmlOutput("heatmapClickReadout"),
-                    #        style="background-color: gray; height: 80px; margin-top: 10px; font-size: 18px; width=200px;")
-                    #    ),
-                    div(id="heatmapContainer", div(id="heatmapWrapper"))
+                    sidebarLayout(
+                        sidebarPanel(
+                            h4("choosers"),
+                            width=3
+                            ),
+                        mainPanel(
+                            div(id="heatmapContainer", div(id="heatmapWrapper")),
+                            width=9
+                            )
+                        ) # sidebarLayout
                     ), # heatmap tabPanel
                  tabPanel(title="GO", value="GOtab",
                     private$goWidget$ui()
