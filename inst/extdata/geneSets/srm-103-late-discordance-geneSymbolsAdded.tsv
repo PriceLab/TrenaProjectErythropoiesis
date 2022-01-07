@@ -1,0 +1,104 @@
+Protein	geneSymbol	clear.drop.at.day.10_11	TMT1.agrees	RNA.protein.discordance	anticorrelated	notes
+BACH1	BACH1	Y	y	Y		drop at 10.5
+BCL11A_XL_L	BCL11A	Y	y	Y		drop at 11 then correlated increase at end
+CBP	CREBBP	Y	y	Y		drop at 11 then correlated increase at end
+CHD1	CHD1	Y	TMT not as strong but trending down	Y		drop at 10.5, then correlated at end
+coREST	RCOR1	Y	y	Y		drop at 11 then correlated decrease at end
+CTCF*	CTCF	Y	y	Y		drop at 11, increase at end
+DOT1L	DOT1L	Y	y	Y		drop at 11
+E12/E47	TCF3	Y	y	Y		drop at 11
+E2F8	E2F8	Y	NA	Y		drop at 11 then correlated increase at end
+GATA1	GATA1	Y	y	Y		drop at 10 but anti-corr starts at 10.5
+GFI1B	GFI1B	Y	y	Y		drop at 11
+GR	NR3C1	Y	NA	Y		drop at 11 then correlated increase at end
+HCFC1	HCFC1	Y	y	Y		drop at 10.5 then correlated  at end
+HDAC3	HDAC3	Y	y	Y		drop at 10.5
+HLTF	HLTF	Y	y	Y		drop at 10.5, but anti-corr starts at 11
+IKZF1	IKZF1	Y	y	Y		drop at 11
+KAT2A	KAT2A	Y	y	Y		drop at 11 then correlated decrease at end
+KLF1*	KLF1	Y	y	Y		drop at 11 then correlated increase at end
+KLF3	KLF3	Y	y	Y		drop at 11 then correlated increase at end
+LDB1*	LDB1	Y	y	Y		drop at 10.5, but anti-corr starts at 11
+MAFF	MAFF	Y	NA	Y		drop at 8.5
+MAFG	MAFG	Y	y	Y		drop at 11 then correlated at end
+MED1	MED1	Y	y	Y		drop at 10.5 but anti corrrelation starts at 11
+MLL3	KMT2C	Y	y	Y		drop at 11
+MLL4 (KMT2D)	KMT2D	Y	y	Y		drop at 10, but anti-corr at 11
+MTA1	MTA1	Y	y	Y		drop at 10.5 but strong anti corr starts at 11
+NFE2	NFE2	Y	NA	Y		drop at 10.5, anti- corr at 11
+NR2C2	NR2C2	Y	y	Y		drop at 11
+OGT	OGT	Y	y	Y		drop at 10.5, but anti-corr at 11
+PSIP1	PSIP1	Y	y/n	Y		drop at 11
+RAD21	RAD21	Y	y	Y		drop at 10.5, but anti-corr at 11
+SCML2	SCML2	Y	y	Y		drop at 10.5, but anti-corr at 11
+SMC3*	SMC3	Y	y	Y		drop at 11
+SSRP1	SSRP1	Y	y	Y		drop at 11
+SUZ12	SUZ12	Y	y	Y		drop at 10.5, but anti-corr at 11
+TAL1*	TAL1	Y	y	Y		drop at 11 increase at end
+TFDP1	TFDP1	Y	y	Y		drop at 8 but anti-corr at 10.5
+TRIM33	TRIM33	Y	y	Y		drop at 11
+USF1	USF1	Y	y	Y		drop at 11
+UTX	KDM6A	Y	y	Y		drop at 11
+WDHD1	WDHD1	Y	y	Y		drop at 11
+ZBTB7A*	ZBTB7A	Y	y	Y		drop at 11
+PO2F1	POU2F1	Y	n	Y		drop at 10.5, but anti-corr at 11
+E2F4*	E2F4	Y	n	Y		drop at 11 then correlated increase at end
+KLF13	KLF13	Y	n	Y		drop at 11
+STAT1	STAT1	N	y	Y	opposite	increase at 11
+STAT2	STAT2	N	NA	Y	opposite	increase at 11
+ETF1	ETF1	?	slight drop SRM, increase TMT	RNA up then down		
+EP300	EP300	?	TMT down SRM up	RNA up		
+CEBPB	CEBPB	?	TMT up/SRM down	RNA slight increase		
+ETO2	CBFA2T3	?	TMT decrease SRM unclear	RNA down		
+STAT3	STAT3	?	TMT down SRM up	RNA down		
+CHD3	CHD3	Y	TMT down more than SRM	N		
+CHD4	CHD4	Y		N		
+CTBP2	CTBP2	Y		N		
+DNMT1	DNMT1	Y		N		
+EGR1	EGR1	Y		N		
+ELF1	ELF1	Y		N		
+ERG	ERG	N	continuous decrease	N		
+ETV6	ETV6	Y	continuous decrease	N		
+FLI1	FLI1	N	continuous decrease	N		
+GATA2	GATA2	N	drop begins at day 8.5	N		
+GATAD2A	GATAD2A	Y		N		
+HDAC1	HDAC1	Y		N		
+HMGB3	HMGB3	Y		N		
+HXB4	HOXB4	Y		N		
+KDM1A	KDM1A	Y		N		
+MNDA	MNDA	N	continous decrease	N		
+NELFE	NELFE	Y		N		
+PARP1	PARP1	Y		N		
+RFX5	RFX5	Y		N		
+RPB1	POLR2A	Y		N		
+RUNX1	RUNX1	Y		N		
+SET1B	SETD1B	Y		N		
+SETB1	SETDB1	Y		N		
+SIN3A	SIN3A	Y		N		
+SIR6	SIRT6	Y		N		
+SMCA4	SMARCA4	Y		N		
+SMRC1	SMARCC1	Y		N		
+SNF5	SMARCB1	Y		N		
+SOX6	SOX6	N	increase	N		
+SPI1	SPI1	N	continuous decrease	N		
+SPT16	SUPT16H	Y	TMT	N		
+STA5A	STAT5A	Y		N		
+T2FA	GTF2F1	Y		N		
+TF2B	GTF2B	Y		N		
+TF3C2	GTF3C2	Y		N		
+TFCP2	TFCP2	Y		N		
+WDR5	WDR5	Y		N		
+ZC11A	ZC3H11A	Y		N		
+GATAD2B	GATAD2B	Y		?		
+HDAC2	HDAC2	Y		?		
+JUN	JUN	Y		?		
+JUND	JUND	Y		?		
+NC2B	DR1	Y		?		
+RXRB	RXRB	Y		?		
+SAP130	SAP130	Y		?		
+TRIM28	TRIM28	Y		?		
+UBF1	UBTF	Y		?		
+FOXO3	FOXO3	Y	TMT up	?		
+NRF1	NRF1	Y		?		
+NFKB1	NFKB1	Y				
+TTF2	TTF2	Y				
